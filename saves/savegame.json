@@ -1,18 +1,8 @@
 {
-    "body_type": "standard",
-    "base_color": [
-        210,
-        180,
-        140
-    ],
-    "pattern_name": "stripes",
-    "pattern_color": [
-        139,
-        69,
-        19
-    ],
-    "eye_color_name": "blue",
-    "hunger": 80.0,
-    "happiness": 60.0,
-    "energy": 100.0
+    "cat_id": "cat01",
+    "hunger": 92.0392066478729,
+    "happiness": 90.71615719795219,
+    "accessories": {
+        "head": "hat2"
+    }
 }

@@ -13,6 +13,8 @@ import core.save_manager as save_manager
 class CatHomeScene(BaseScene):
     def __init__(self, scene_manager, game):
         super().__init__(scene_manager, game)
+
+        current_width, current_height = self.game.screen.get_size()
         
         self.background_image = resources.load_image("images/backgrounds/main.jpg")
         
@@ -34,7 +36,7 @@ class CatHomeScene(BaseScene):
         )
         
         food_image = resources.load_image("images/items/food/001.png", scale=0.5)
-        food_home_pos = (SCREEN_WIDTH - food_image.get_width() - 50, SCREEN_HEIGHT - food_image.get_height() - 50)
+        food_home_pos = (current_width - food_image.get_width() - 50, current_height - food_image.get_height() - 50) 
         self.food_item = DraggableItem(food_image, food_home_pos)
 
         self.food_replenish_delay = 1.0
@@ -42,11 +44,11 @@ class CatHomeScene(BaseScene):
 
         self.font = pygame.font.SysFont(DEFAULT_FONT_NAME, 30)
         self.instructions_surf = self.font.render("Drag food to cat! Click & Hold cat to pet! (ESC to exit)", True, WHITE)
-        self.instructions_rect = self.instructions_surf.get_rect(center=(SCREEN_WIDTH / 2, 30))
+        self.instructions_rect = self.instructions_surf.get_rect(center=(current_width / 2, 30)) 
         
         self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24, bold=True)
 
-        self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.5)
+        self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.3)
         self.mirror_rect = self.mirror_image.get_rect(topleft=(20, 250))
      
     def on_quit(self):

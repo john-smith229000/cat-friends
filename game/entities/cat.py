@@ -179,8 +179,8 @@ class Cat:
                 try:
                     # NOTE: We add a hardcoded offset to position the hat.
                     # This might need adjusting per-hat or per-animation frame later.
-                    accessory_image = resources.load_image(path, scale=0.75)
-                    accessory_pos = (self.rect.centerx - accessory_image.get_width() / 2, self.rect.y - 15)
+                    accessory_image = resources.load_image(path, scale=0.17)
+                    accessory_pos = (self.rect.centerx - accessory_image.get_width() / 2.25, self.rect.y + 2)
                     screen.blit(accessory_image, accessory_pos)
                 except FileNotFoundError:
                     print(f"Warning: Accessory image not found at {path}")

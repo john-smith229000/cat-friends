@@ -13,15 +13,18 @@ class MenuScene(BaseScene):
     def __init__(self, scene_manager, game):
         super().__init__(scene_manager, game)
         
+        # Get current screen dimensions
+        current_width, current_height = self.game.screen.get_size()
+        
         self.title_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 72)
         self.title_surf = self.title_font.render(WINDOW_TITLE, True, BLACK)
-        self.title_rect = self.title_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.2))
+        self.title_rect = self.title_surf.get_rect(center=(current_width / 2, current_height * 0.2)) # <-- CORRECTED
         
         # --- Dynamic Button Creation ---
         self.buttons = []
         button_width, button_height = 200, 50
-        button_x = (SCREEN_WIDTH - button_width) / 2
-        button_y_start = SCREEN_HEIGHT * 0.4
+        button_x = (current_width - button_width) / 2 # <-- CORRECTED
+        button_y_start = current_height * 0.4 # <-- CORRECTED
         button_spacing = 70
 
         # Check if a save file exists
