@@ -12,26 +12,38 @@ class Cat:
     Manages a cat's state, animations, and interactions.
     This class is the "brain" and "body" of the cat.
     """
-    def __init__(self, cat_id, position):
+    def __init__(self, cat_id, position, initial_stats=None):
         self.cat_id = cat_id
+        # ... (rest of initialization is mostly the same)
         self.animations = self._load_animations()
-
-        # Default to idle
         self.state = "idle"
-        self._previous_state = "idle" # To remember what to go back to after a temporary action
-        
+        self._previous_state = "idle"
         self.animation = self.animations.get(self.state)
-        if not self.animation:
-            raise ValueError(f"Cat '{cat_id}' is missing required 'idle' animation.")
-
         self.image = self.animation.image
         self.rect = self.image.get_rect(midbottom=position)
         self.mask = self.animation.mask
-
-        self.is_being_petted = False # New flag to track if mouse is held down on cat
+        self.is_being_petted = False
         self.max_stat = MAX_STAT_VALUE
-        self.hunger = 80.0
-        self.happiness = 60.0
+
+        if initial_stats:
+            # Load from save data
+            self.hunger = initial_stats.get("hunger", 80.0)
+            self.happiness = initial_stats.get("happiness", 60.0)
+            print("Loaded cat stats from save.")
+        else:
+            # Start with default values for a new game
+            self.hunger = 80.0
+            self.happiness = 60.0
+            print("Initialized new cat with default stats.")
+
+    def to_dict(self):
+        """Exports the cat's current state to a savable dictionary."""
+        return {
+            "cat_id": self.cat_id,
+            "hunger": self.hunger,
+            "happiness": self.happiness
+        }
+
 
     def _load_animations(self):
         """
@@ -162,7 +174,3 @@ class Cat:
         # Step 2: Slower, pixel-perfect mask check
         offset = (item.rect.x - self.rect.x, item.rect.y - self.rect.y)
         return self.mask.overlap(item.mask, offset) is not None
-
-    def is_hovered_by_item(self, item_rect):
-        """Checks if the cat's bounding box is colliding with the item's rect."""
-        return self.rect.colliderect(item_rect)

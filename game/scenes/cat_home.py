@@ -7,16 +7,25 @@ from core.scene_manager import BaseScene
 from core.resource_manager import resources
 from entities.cat import Cat
 from core.draggable_item import DraggableItem
+import core.save_manager as save_manager
 
 class CatHomeScene(BaseScene):
-    def __init__(self, scene_manager):
-        super().__init__(scene_manager)
+    def __init__(self, scene_manager, game):
+        super().__init__(scene_manager, game)
         
         self.background_image = resources.load_image("images/backgrounds/main.jpg")
         
+        # Load game data or start a new game ---
+        save_data = save_manager.load_game()
+        
+        # Determine cat_id: from save file or default to "cat01"
+        cat_id_to_load = save_data.get("cat_id", "cat01") if save_data else "cat01"
+
+        # Create the Cat instance, passing the loaded stats
         self.cat = Cat(
-            cat_id="cat01",
-            position=(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 40)
+            cat_id=cat_id_to_load,
+            position=(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 40),
+            initial_stats=save_data
         )
         
         food_image = resources.load_image("images/items/food/001.png", scale=0.5)
@@ -30,9 +39,12 @@ class CatHomeScene(BaseScene):
         self.instructions_surf = self.font.render("Drag food to cat! Click & Hold cat to pet! (ESC to exit)", True, WHITE)
         self.instructions_rect = self.instructions_surf.get_rect(center=(SCREEN_WIDTH / 2, 30))
         
-        # --- NEW: HUD FONT ---
         self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24, bold=True)
-        # --- END HUD FONT ---
+     
+    def on_quit(self):
+        """Called by the main game loop before exiting."""
+        if self.cat:
+            save_manager.save_game(self.cat.to_dict())
 
     def handle_event(self, event):
         if self.food_item.visible:
@@ -91,6 +103,12 @@ class CatHomeScene(BaseScene):
         pygame.draw.rect(screen, (200, 150, 50), (20, 120, hun_width, 25))
         # Bar border
         pygame.draw.rect(screen, WHITE, (20, 120, 200, 25), 2)
+
+    def on_exit(self):
+        """Called when leaving this scene - store cat data"""
+        if self.cat:
+            self.game.cat_data = self.cat.to_dict()
+            print("Cat data stored for later saving")
 
     def draw(self, screen):
         screen.blit(pygame.transform.scale(self.background_image, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
