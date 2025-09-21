@@ -1,5 +1,18 @@
 {
-    "cat_id": "cat01",
-    "hunger": 98.19986619949346,
-    "happiness": 98.44688005447395
+    "body_type": "standard",
+    "base_color": [
+        210,
+        180,
+        140
+    ],
+    "pattern_name": "stripes",
+    "pattern_color": [
+        139,
+        69,
+        19
+    ],
+    "eye_color_name": "blue",
+    "hunger": 80.0,
+    "happiness": 60.0,
+    "energy": 100.0
 }

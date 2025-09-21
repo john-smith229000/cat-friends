@@ -7,6 +7,7 @@ from core.scene_manager import BaseScene
 from core.resource_manager import resources
 from entities.cat import Cat
 from core.draggable_item import DraggableItem
+from scenes.accessory import AccessoryScene
 import core.save_manager as save_manager
 
 class CatHomeScene(BaseScene):
@@ -15,17 +16,21 @@ class CatHomeScene(BaseScene):
         
         self.background_image = resources.load_image("images/backgrounds/main.jpg")
         
-        # Load game data or start a new game ---
-        save_data = save_manager.load_game()
-        
-        # Determine cat_id: from save file or default to "cat01"
-        cat_id_to_load = save_data.get("cat_id", "cat01") if save_data else "cat01"
+        # --- Updated Cat Loading Logic ---
+        # Prioritize data from a previous scene (like customization or menu)
+        if self.game.cat_data:
+            initial_data = self.game.cat_data
+            cat_id_to_load = initial_data.get("cat_id", "cat01") # Default for now
+        else:
+            # Fallback to loading from save file if no data was passed
+            initial_data = save_manager.load_game() or {}
+            cat_id_to_load = initial_data.get("cat_id", "cat01")
 
-        # Create the Cat instance, passing the loaded stats
+        # Create the Cat instance
         self.cat = Cat(
             cat_id=cat_id_to_load,
             position=(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 40),
-            initial_stats=save_data
+            initial_stats=initial_data
         )
         
         food_image = resources.load_image("images/items/food/001.png", scale=0.5)
@@ -40,6 +45,9 @@ class CatHomeScene(BaseScene):
         self.instructions_rect = self.instructions_surf.get_rect(center=(SCREEN_WIDTH / 2, 30))
         
         self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24, bold=True)
+
+        self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.5)
+        self.mirror_rect = self.mirror_image.get_rect(topleft=(20, 250))
      
     def on_quit(self):
         """Called by the main game loop before exiting."""
@@ -61,11 +69,25 @@ class CatHomeScene(BaseScene):
                     self.food_replenish_timer = self.food_replenish_delay
                 else:
                     self.food_item.reset_position()
+            if self.mirror_rect.collidepoint(event.pos):
+                print("Mirror clicked! Opening accessory menu.")
+                # Pass the current cat's data to the accessory scene
+                self.scene_manager.push(AccessoryScene, data=self.cat.to_dict())
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 from scenes.menu import MenuScene
                 self.scene_manager.set_scene(MenuScene)
+    
+    def on_enter(self, data=None):
+        """Called when returning to this scene, e.g., from the accessory menu."""
+        # If the game has updated cat data, reload the cat with the new look
+        if self.game.cat_data:
+             self.cat = Cat(
+                cat_id=self.game.cat_data.get("cat_id", "cat01"),
+                position=(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 40),
+                initial_stats=self.game.cat_data
+            )
 
     def update(self, dt):
         self.cat.update(dt) # This now updates the cat's stats over time
@@ -118,5 +140,7 @@ class CatHomeScene(BaseScene):
         
         pygame.draw.rect(screen, (0, 0, 0, 150), self.instructions_rect.inflate(20, 10))
         screen.blit(self.instructions_surf, self.instructions_rect)
+
+        screen.blit(self.mirror_image, self.mirror_rect)
         
         self._draw_hud(screen)

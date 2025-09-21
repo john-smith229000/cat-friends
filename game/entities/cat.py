@@ -36,12 +36,18 @@ class Cat:
             self.happiness = 60.0
             print("Initialized new cat with default stats.")
 
+        # Add a dictionary to store equipped accessories
+        self.accessories = {}
+        if initial_stats and "accessories" in initial_stats:
+            self.accessories = initial_stats["accessories"]
+
     def to_dict(self):
         """Exports the cat's current state to a savable dictionary."""
         return {
             "cat_id": self.cat_id,
             "hunger": self.hunger,
-            "happiness": self.happiness
+            "happiness": self.happiness,
+            "accessories": self.accessories,
         }
 
 
@@ -164,6 +170,20 @@ class Cat:
         """Draws the cat on the screen."""
         if self.image: # Only draw if image is loaded (animation.image could be None if no frames)
             screen.blit(self.image, self.rect)
+        
+        # Draw head accessory
+            head_accessory = self.accessories.get("head")
+            if head_accessory:
+                # Path assumes a structure for accessories
+                path = f"images/items/clothes/hats/{head_accessory}.png"
+                try:
+                    # NOTE: We add a hardcoded offset to position the hat.
+                    # This might need adjusting per-hat or per-animation frame later.
+                    accessory_image = resources.load_image(path, scale=0.75)
+                    accessory_pos = (self.rect.centerx - accessory_image.get_width() / 2, self.rect.y - 15)
+                    screen.blit(accessory_image, accessory_pos)
+                except FileNotFoundError:
+                    print(f"Warning: Accessory image not found at {path}")
     
     def collides_with_item(self, item):
         """Checks for pixel-perfect collision with a DraggableItem."""
