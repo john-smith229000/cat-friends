@@ -56,7 +56,8 @@ class Game:
                 self.scene_manager.handle_event(event)
 
             self.scene_manager.update(dt)
-            self.scene_manager.draw()
+            dirty_rects = self.scene_manager.draw()
+            pygame.display.update(dirty_rects) # Pass the list of updated rects
             
             self.clock.tick(FPS)
             

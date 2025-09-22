@@ -77,11 +77,14 @@ class Cat:
         self.layers = self._load_layers()
         self.state = "idle"
         
-        self.base_animation = Animation(self.layers['base']['idle'], 0.1, loop=True, pingpong=True)
+        self.state = "idle"
+        self.base_animation = Animation(self.layers['base']['idle'], 0.1, loop=False, pingpong=True)
+        self.is_hovered_by_food = False
         
         self.image = None
         self.scaled_image = None  # Store scaled version separately
         self.rect = None
+        self.last_rect = None
         self.mask = None
         
         self.hunger = initial_stats.get("hunger", 80.0)
@@ -89,6 +92,7 @@ class Cat:
         self.energy = initial_stats.get("energy", 100.0)
         self.max_stat = MAX_STAT_VALUE
         self.is_being_petted = False
+        self.is_hovered_by_food = False
         self.accessories = initial_stats.get("accessories", {})
         
         # Movement and animation
@@ -139,6 +143,7 @@ class Cat:
             "eye_blink": f"{path_prefix}/eyes/idle/01_blink.png", 
             "mouth_color": f"{path_prefix}/mouth/idle/01_color.png",
             "mouth_outline": f"{path_prefix}/mouth/idle/01.png",
+            "mouth_eat": f"{path_prefix}/mouth/eat/01.png",
         }
         
         for layer_name, path in optional_layers.items():
@@ -194,7 +199,14 @@ class Cat:
         # 4. Apply facial features (these should already have their colors baked in)
         # Or colorize them if they're grayscale templates
         
-        # Mouth
+        # --- Mouth ---
+        # Draw the correct mouth outline first (open or closed)
+        if self.is_hovered_by_food and self.layers.get("mouth_eat"):
+            final_image.blit(self.layers["mouth_eat"], (0, 0))
+        elif self.layers.get("mouth_outline"):
+            final_image.blit(self.layers["mouth_outline"], (0, 0))
+
+        # Always draw the colorized nose on top of the mouth
         nose_color = self.customization_data.get("nose_color", (255, 182, 193))
         if self.layers.get("mouth_color"):
             mouth_layer = pygame.Surface(self.layers["mouth_color"].get_size(), pygame.SRCALPHA)
@@ -204,12 +216,9 @@ class Cat:
             colored_mouth.blit(mouth_layer, (0, 0), special_flags=pygame.BLEND_MULT)
             
             final_image.blit(colored_mouth, (0, 0))
-        
-        if self.layers.get("mouth_outline"):
-            final_image.blit(self.layers["mouth_outline"], (0, 0))
 
-        # Eyes
-        if self.is_blinking and self.layers.get("eye_blink"):
+        # Eyes - show closed eyes if blinking OR being petted
+        if (self.is_blinking or self.is_being_petted) and self.layers.get("eye_blink"):
             final_image.blit(self.layers["eye_blink"], (0, 0))
         else:
             eye_color = self.customization_data.get("eye_color", (70, 150, 220))
@@ -273,33 +282,39 @@ class Cat:
     
     def update(self, dt):
         """Updates the cat's animation, movement, and re-composites the image."""
+        self.last_rect = self.rect.copy()
         
+        # Increase happiness when being petted
+        if self.is_being_petted:
+            self.happiness += HAPPINESS_INCREASE_RATE * dt
+            self.happiness = min(self.happiness, self.max_stat) # Cap at max
+
         # Handle idle animation logic
         if self.state == "idle":
             self.idle_animation_timer -= dt
             if self.idle_animation_timer <= 0 and not self.is_playing_idle_sequence:
                 self.is_playing_idle_sequence = True
                 num_frames = len(self.base_animation.frames)
-                # A full loop for ping-pong is (num_frames - 1) * 2
                 frames_to_play = (num_frames - 1) * 2 + random.randint(0, num_frames - 1)
                 self.base_animation.play(frames_to_play)
 
             if self.is_playing_idle_sequence and self.base_animation.is_done:
                 self.is_playing_idle_sequence = False
-                self.idle_animation_timer = random.uniform(1, 4)
+                self.idle_animation_timer = random.uniform(2, 7)
             
-            # Handle blink animation logic
-            if not self.is_blinking:
-                self.blink_timer -= dt
-                if self.blink_timer <= 0:
-                    self.is_blinking = True
-                    self.blink_duration_timer = self.blink_duration
-            else:
-                self.blink_duration_timer -= dt
-                if self.blink_duration_timer <= 0:
-                    self.is_blinking = False
-                    self.blink_timer = random.uniform(1, 5)
-        
+            # Handle blink animation logic, but only if not being petted
+            if not self.is_being_petted:
+                if not self.is_blinking:
+                    self.blink_timer -= dt
+                    if self.blink_timer <= 0:
+                        self.is_blinking = True
+                        self.blink_duration_timer = self.blink_duration
+                else:
+                    self.blink_duration_timer -= dt
+                    if self.blink_duration_timer <= 0:
+                        self.is_blinking = False
+                        self.blink_timer = random.uniform(1, 5)
+
         
         # Update animation
         self.base_animation.update(dt)
@@ -349,6 +364,34 @@ class Cat:
     def set_state(self, new_state, force=False):
         self.state = new_state
 
-    def handle_event(self, event): pass
-    def feed(self): pass
-    def collides_with_item(self, item): return False
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1 and self.rect.collidepoint(event.pos):
+                # Pixel-perfect check to see if we clicked on the cat itself
+                pos_in_mask = (event.pos[0] - self.rect.x, event.pos[1] - self.rect.y)
+                if self.mask and self.mask.get_at(pos_in_mask):
+                    self.is_being_petted = True
+        
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1 and self.is_being_petted:
+                self.is_being_petted = False
+
+    def set_food_hover(self, is_hovering):
+        """Sets the flag for when food is hovering over the cat."""
+        self.is_hovered_by_food = is_hovering
+
+    def feed(self):
+        """Increases hunger when fed."""
+        self.hunger += FOOD_HUNGER_REPLENISH
+        self.hunger = min(self.hunger, self.max_stat)
+        print(f"Cat fed! Hunger is now {self.hunger:.1f}")
+
+    def collides_with_item(self, item):
+        """Checks for pixel-perfect collision with a DraggableItem."""
+        # Step 1: Fast rectangle check
+        if not self.rect.colliderect(item.rect):
+            return False
+        
+        # Step 2: Slower, pixel-perfect mask check
+        offset = (item.rect.x - self.rect.x, item.rect.y - self.rect.y)
+        return self.mask.overlap(item.mask, offset) is not None

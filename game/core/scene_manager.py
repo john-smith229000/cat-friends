@@ -9,7 +9,7 @@ class BaseScene:
 
     def handle_event(self, event): pass
     def update(self, dt): pass
-    def draw(self, screen): pass
+    def draw(self, screen): return []
     def on_enter(self, data=None): pass
     def on_exit(self): pass
     def on_quit(self): pass
