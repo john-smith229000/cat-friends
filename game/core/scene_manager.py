@@ -42,10 +42,20 @@ class SceneManager:
         new_scene.on_enter(data)
         self.scenes.append(new_scene)
         
+    def on_resume(self): 
+        """Called when this scene becomes active again after another scene pops."""
+        pass
+
     def pop(self):
         if self.get_active_scene():
             self.get_active_scene().on_exit()
-            return self.scenes.pop()
+            popped_scene = self.scenes.pop()
+            
+            # Call on_resume on the scene that's now active
+            if self.get_active_scene() and hasattr(self.get_active_scene(), 'on_resume'):
+                self.get_active_scene().on_resume()
+                
+            return popped_scene
 
     def set_scene(self, scene_class, data=None):
         while self.scenes:

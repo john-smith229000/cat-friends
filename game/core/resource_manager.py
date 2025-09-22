@@ -31,11 +31,11 @@ class ResourceManager:
             
             if scale is not None:
                 if isinstance(scale, tuple) and len(scale) == 2:
-                    image = pygame.transform.scale(image, scale)
+                    image = pygame.transform.smoothscale(image, scale)
                 elif isinstance(scale, (int, float)):
                     new_width = int(image.get_width() * scale)
                     new_height = int(image.get_height() * scale)
-                    image = pygame.transform.scale(image, (new_width, new_height))
+                    image = pygame.transform.smoothscale(image, (new_width, new_height))
 
             self._image_cache[cache_key] = image
             return image

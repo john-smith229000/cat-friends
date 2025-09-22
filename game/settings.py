@@ -1,4 +1,5 @@
 import pygame
+from pathlib import Path
 
 # Screen and Display Settings
 SCREEN_WIDTH = 1280
@@ -11,8 +12,13 @@ BLACK = pygame.Color(0, 0, 0)
 WHITE = pygame.Color(255, 255, 255)
 BACKGROUND_COLOR = pygame.Color(230, 240, 255) # A light pastel blue
 
-# Font Settings (placeholders)
-DEFAULT_FONT_NAME = "Arial"
+# Font Settings 
+ASSETS_PATH = Path(__file__).parent.parent / "assets"
+FONTS_PATH = ASSETS_PATH / "fonts"
+
+# Font settings
+FREDOKA_FONT_PATH = FONTS_PATH / "FredokaOne-Regular.ttf"
+DEFAULT_FONT_NAME = "fredokaoneregular"
 DEFAULT_FONT_SIZE = 32
 
 MAX_STAT_VALUE = 100.0

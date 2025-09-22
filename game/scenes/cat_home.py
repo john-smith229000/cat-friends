@@ -8,8 +8,7 @@ from core.resource_manager import resources
 from entities.cat import Cat
 from core.draggable_item import DraggableItem
 import core.save_manager as save_manager
-# from scenes.menu import MenuScene  <-- REMOVED FROM HERE
-from scenes.accessory import AccessoryScene
+from scenes.wardrobe import WardrobeScene
 
 class CatHomeScene(BaseScene):
     def __init__(self, scene_manager, game):
@@ -17,6 +16,12 @@ class CatHomeScene(BaseScene):
         
         # --- Simplified Cat Loading Logic ---
         self.cat = None
+        self.background_x = 0
+        self.background_y = 0 # New variable for vertical position
+        self.background_y_offset = 450 # Shift the background down by this many pixels
+        self.pan_speed = 200 # pixels per second
+        self.zoom_factor = 2.2
+        self.cat_world_x = 0
         self._recalculate_layout()
         self.dirty_rects = []
         self.force_redraw = True
@@ -24,15 +29,30 @@ class CatHomeScene(BaseScene):
     def _recalculate_layout(self):
         current_width, current_height = self.game.screen.get_size()
         
-        self.background_image = resources.load_image("images/backgrounds/main.jpg", scale=(current_width, current_height))
+        original_bg = resources.load_image("images/backgrounds/main.png")
+        aspect_ratio = original_bg.get_width() / original_bg.get_height()
+        scaled_height = int(current_height * self.zoom_factor)
+        scaled_width = int(scaled_height * aspect_ratio)
+
+        self.background_image = pygame.transform.smoothscale(original_bg, (scaled_width, scaled_height))
+        self.max_pan_x = max(0, self.background_image.get_width() - current_width)
+        max_pan_y = max(0, self.background_image.get_height() - current_height)
+
+        # The cat's fixed position within the large background image
+        self.cat_world_x = self.background_image.get_width() / 2
+
+        # Center the background initially
+        self.background_x = -self.max_pan_x / 2
+        # Apply the vertical offset
+        self.background_y = -min(self.background_y_offset, max_pan_y)
         
         food_image = resources.load_image("images/items/food/001.png", scale=0.5)
         food_home_pos = (current_width - food_image.get_width() - 50, current_height - food_image.get_height() - 50)
         self.food_item = DraggableItem(food_image, food_home_pos)
 
         self.font = pygame.font.SysFont(DEFAULT_FONT_NAME, 30)
-        self.instructions_surf = self.font.render("Drag food to cat! Click & Hold cat to pet! (ESC to exit)", True, WHITE)
-        self.instructions_rect = self.instructions_surf.get_rect(center=(current_width / 2, 30))
+        #self.instructions_surf = self.font.render("Drag food to cat! Click & Hold cat to pet! (ESC to exit)", True, WHITE)
+        #self.instructions_rect = self.instructions_surf.get_rect(center=(current_width / 2, 30))
         
         self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24, bold=True)
         
@@ -43,9 +63,10 @@ class CatHomeScene(BaseScene):
         self.food_replenish_timer = 0.0
 
         if self.cat:
-            # Use a relative Y position (e.g., 80% down the screen)
-            new_cat_y = current_height * 0.75
-            self.cat.set_position(current_width / 2, new_cat_y)
+            # If cat exists (e.g., on resize), update its position based on the new layout
+            cat_y_pos = current_height * 0.75
+            new_cat_screen_x = self.cat_world_x + self.background_x
+            self.cat.set_position(new_cat_screen_x, cat_y_pos)
 
         self.force_redraw = True
 
@@ -58,19 +79,48 @@ class CatHomeScene(BaseScene):
         self.game.cat_data = initial_data
 
         # Create the cat with the correct, consistent position.
-        current_width, current_height = self.game.screen.get_size()
+        current_height = self.game.screen.get_size()[1]
         cat_y_pos = current_height * 0.75 # Consistent relative position
+        
+        # Calculate initial screen position based on the background offset
+        initial_cat_screen_x = self.cat_world_x + self.background_x
 
         self.cat = Cat(
-            position=(current_width / 2, cat_y_pos),
+            position=(initial_cat_screen_x, cat_y_pos),
             initial_stats=initial_data
         )
         # Force a full redraw on entering the scene
         self.force_redraw = True
+    
+    def on_resume(self):
+        """Called when returning from another scene (like wardrobe)."""
+        # Force a full redraw when returning from wardrobe
+        self.force_redraw = True
+        
+        # Reload cat with updated data
+        if self.game.cat_data and self.cat:
+            # Update the existing cat with new data
+            current_width, current_height = self.game.screen.get_size()
+            cat_y_pos = current_height * 0.75
+            
+            # Create new cat with updated data
+            self.cat = Cat(
+                position=(current_width / 2, cat_y_pos),
+                initial_stats=self.game.cat_data
+            )
      
     def on_quit(self):
         if self.cat:
             save_manager.save_game(self.cat.to_dict())
+    
+    def handle_mirror_click(self, mouse_pos):
+        """Check if the mirror was clicked and open wardrobe."""
+        if self.mirror_rect.collidepoint(mouse_pos):
+            # Pass current cat data to wardrobe scene
+            current_cat_data = self.cat.to_dict() if self.cat else self.game.cat_data
+            self.scene_manager.push(WardrobeScene, data=current_cat_data)
+            return True
+        return False
 
     def handle_event(self, event):
         if event.type == pygame.VIDEORESIZE:
@@ -81,21 +131,43 @@ class CatHomeScene(BaseScene):
         self.cat.handle_event(event)
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            # Check mirror click first
+            if self.handle_mirror_click(event.pos):
+                return  # Mirror was clicked, don't process other clicks
+            
             if self.food_item.is_dragging:
                 self.food_item.is_dragging = False
                 # Check for collision when food is dropped
                 if self.cat.collides_with_item(self.food_item):
                     self.cat.feed()
-                    self.food_item.hide() # <-- Food disappears here
+                    self.food_item.hide()
                 else:
-                    self.food_item.reset_position() # Snap back if not on cat
+                    self.food_item.reset_position()
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                from scenes.menu import MenuScene # <-- MOVED HERE
+                from scenes.menu import MenuScene
                 self.scene_manager.set_scene(MenuScene)
 
     def update(self, dt):
+        keys = pygame.key.get_pressed()
+        panned = False
+        if keys[pygame.K_LEFT]:
+            self.background_x += self.pan_speed * dt
+            panned = True
+        if keys[pygame.K_RIGHT]:
+            self.background_x -= self.pan_speed * dt
+            panned = True
+        
+        # Clamp the background position to its limits
+        self.background_x = max(-self.max_pan_x, min(0, self.background_x))
+
+        if panned:
+            # If we panned, update the cat's screen position
+            new_cat_screen_x = self.cat_world_x + self.background_x
+            self.cat.set_position(new_cat_screen_x, self.cat.position[1])
+            self.force_redraw = True
+
         self.cat.update(dt)
         self.food_item.update(dt)
 
@@ -141,14 +213,14 @@ class CatHomeScene(BaseScene):
     def draw(self, screen):
         # If a full redraw is needed (first frame or after resize)
         if self.force_redraw:
-            screen.blit(self.background_image, (0, 0))
+            screen.blit(self.background_image, (self.background_x, self.background_y))
             # Draw all elements once
             self.cat.draw(screen)
             self.food_item.draw(screen)
             screen.blit(self.mirror_image, self.mirror_rect)
-            instruction_bg_rect = self.instructions_rect.inflate(20, 10)
-            pygame.draw.rect(screen, (0, 0, 0, 150), instruction_bg_rect)
-            screen.blit(self.instructions_surf, self.instructions_rect)
+            #instruction_bg_rect = self.instructions_rect.inflate(20, 10)
+            #pygame.draw.rect(screen, (0, 0, 0, 150), instruction_bg_rect)
+            #screen.blit(self.instructions_surf, self.instructions_rect)
             self._draw_hud(screen)
             
             self.force_redraw = False
@@ -156,26 +228,29 @@ class CatHomeScene(BaseScene):
 
         # --- Normal Dirty Rect Logic for subsequent frames ---
         dirty_rects = []
-
-        # Step 1: Clear the last known positions of moving objects
+        
+        # Redraw the portion of the background under the cat and food item's last positions
+        screen.blit(self.background_image, self.cat.last_rect, self.cat.last_rect.move(-self.background_x, -self.background_y))
         dirty_rects.append(self.cat.last_rect)
-        screen.blit(self.background_image, self.cat.last_rect, self.cat.last_rect)
-        
+
+        screen.blit(self.background_image, self.food_item.last_rect, self.food_item.last_rect.move(-self.background_x, -self.background_y))
         dirty_rects.append(self.food_item.last_rect)
-        screen.blit(self.background_image, self.food_item.last_rect, self.food_item.last_rect)
-        
+
         # Step 2: Draw everything and collect their new rects to be updated
-        dirty_rects.append(self.cat.draw(screen))
-        dirty_rects.append(self.food_item.draw(screen))
+        self.cat.draw(screen)
+        dirty_rects.append(self.cat.rect)
+
+        self.food_item.draw(screen)
+        dirty_rects.append(self.food_item.rect)
         
         # Redraw all static UI elements to prevent trails
         screen.blit(self.mirror_image, self.mirror_rect)
         dirty_rects.append(self.mirror_rect)
         
-        instruction_bg_rect = self.instructions_rect.inflate(20, 10)
-        pygame.draw.rect(screen, (0, 0, 0, 150), instruction_bg_rect)
-        screen.blit(self.instructions_surf, self.instructions_rect)
-        dirty_rects.append(instruction_bg_rect)
+        #instruction_bg_rect = self.instructions_rect.inflate(20, 10)
+        #pygame.draw.rect(screen, (0, 0, 0, 150), instruction_bg_rect)
+        #screen.blit(self.instructions_surf, self.instructions_rect)
+        #dirty_rects.append(instruction_bg_rect)
         
         hud_rect = pygame.Rect(20, 20, 200, 130)
         self._draw_hud(screen)

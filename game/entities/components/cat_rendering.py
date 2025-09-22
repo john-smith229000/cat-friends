@@ -172,15 +172,51 @@ class CatRenderer:
                 final_image.blit(self.layers["eye_outline"], (0, 0))
     
     def draw_accessories(self, screen, rect, accessories, scale):
-        """Draws accessories on top of the cat."""
+        """Enhanced accessory drawing with better positioning and scaling."""
+        # Head accessories (hats, etc.)
         head_accessory = accessories.get("head")
         if head_accessory:
             path = f"images/items/clothes/hats/{head_accessory}.png"
             try:
-                accessory_image = resources.load_image(path, scale=0.75 * scale)
-                accessory_pos = (rect.centerx - accessory_image.get_width() / 2, 
-                               rect.y - 15 * scale)
+                # Scale the accessory appropriately based on cat scale
+                accessory_scale = 0.2 * scale  # Reduced from 0.75 for better proportion
+                accessory_image = resources.load_image(path, scale=accessory_scale)
+                
+                # Better positioning calculation - higher up and more centered
+                accessory_pos = (
+                    rect.centerx - (accessory_image.get_width()+10), 
+                    rect.y - 25 * scale  # Moved up more
+                )
                 screen.blit(accessory_image, accessory_pos)
             except FileNotFoundError:
                 print(f"Warning: Accessory image not found at {path}")
-
+        
+        # Body accessories (future: collars, shirts, etc.)
+        body_accessory = accessories.get("body")
+        if body_accessory:
+            path = f"images/items/clothes/body/{body_accessory}.png"
+            try:
+                accessory_image = resources.load_image(path, scale=scale)
+                # Position on cat's body
+                accessory_pos = (
+                    rect.centerx - accessory_image.get_width() / 2,
+                    rect.centery - accessory_image.get_height() / 2
+                )
+                screen.blit(accessory_image, accessory_pos)
+            except FileNotFoundError:
+                print(f"Warning: Body accessory image not found at {path}")
+        
+        # Other accessories (future: bows, jewelry, etc.)
+        other_accessory = accessories.get("accessories")
+        if other_accessory:
+            path = f"images/items/clothes/accessories/{other_accessory}.png"
+            try:
+                accessory_image = resources.load_image(path, scale=0.5 * scale)  # Smaller scale
+                # Position as needed
+                accessory_pos = (
+                    rect.centerx - accessory_image.get_width() / 2,
+                    rect.bottom - 30 * scale
+                )
+                screen.blit(accessory_image, accessory_pos)
+            except FileNotFoundError:
+                print(f"Warning: Accessory image not found at {path}")

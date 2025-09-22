@@ -17,7 +17,7 @@ class CatCustomizationScene(BaseScene):
             "body_type": "shorthair",
             "base_color": (230, 210, 190),     # Default Beige
             "pattern_color": (90, 70, 50),     # Default Dark Brown
-            "eye_color": (70, 150, 220),       # Default Blue
+            "eye_color": (87, 255, 250),       # Default Blue
             "nose_color": (255, 180, 200),     # Default Pink
             # Default stats for a new cat
             "hunger": 100.0, "happiness": 70.0, "energy": 100.0
@@ -30,7 +30,7 @@ class CatCustomizationScene(BaseScene):
         self.palettes = {
             "base": [(230, 210, 190), (100, 100, 100), (255, 255, 255), (240, 180, 100), (50, 50, 50)],
             "pattern": [(90, 70, 50), (200, 200, 200), (50, 50, 50), (200, 100, 50), None], # None = no pattern
-            "eyes": [(70, 150, 220), (80, 200, 80), (230, 200, 90), (150, 100, 230)]
+            "eyes": [(87, 255, 250), (80, 200, 80), (230, 200, 90), (150, 100, 230)]
         }
         
         self.current_selection = "base" # Tracks which category is being edited
@@ -96,7 +96,7 @@ class CatCustomizationScene(BaseScene):
         if event.type == pygame.VIDEORESIZE:
             self._recalculate_layout()
             # Also update preview position
-            self.cat_preview.position = (self.game.screen.get_width() / 2, self.game.screen.get_height() / 2)
+            self.cat_preview.set_position(self.game.screen.get_width() / 2, self.game.screen.get_height() / 2)
 
         for btn in self.category_buttons + self.color_buttons + [self.confirm_button]:
             btn.handle_event(event)
