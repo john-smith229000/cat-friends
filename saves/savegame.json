@@ -1,25 +1,25 @@
 {
     "cat_id": "custom_cat",
-    "hunger": 100.0,
-    "happiness": 100.0,
+    "hunger": 93.96452741622942,
+    "happiness": 99.76565828323368,
     "energy": 100.0,
     "accessories": {},
     "customization": {
         "body_type": "shorthair",
         "base_color": [
-            50,
-            50,
-            50
+            240,
+            180,
+            100
         ],
         "pattern_color": [
-            50,
-            50,
+            200,
+            100,
             50
         ],
         "eye_color": [
-            80,
-            200,
-            80
+            150,
+            100,
+            230
         ],
         "nose_color": [
             255,

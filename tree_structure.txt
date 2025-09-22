@@ -1,0 +1,156 @@
+Folder PATH listing for volume OS
+Volume serial number is 6095-0C7C
+C:.
+|   .gitignore
+|   README.md
+|   tree_structure.txt
+|   
++---assets
+|   +---fonts
+|   +---images
+|   |   +---backgrounds
+|   |   |       main.jpg
+|   |   |       
+|   |   +---cats
+|   |   |   +---cat01
+|   |   |   |   |   001.pdn
+|   |   |   |   |   
+|   |   |   |   +---eat
+|   |   |   |   |       001.png
+|   |   |   |   |       
+|   |   |   |   +---idle
+|   |   |   |   |       001.png
+|   |   |   |   |       002.png
+|   |   |   |   |       003.png
+|   |   |   |   |       004.png
+|   |   |   |   |       005.png
+|   |   |   |   |       
+|   |   |   |   \---pet
+|   |   |   |           001.png
+|   |   |   |           
+|   |   |   \---custom
+|   |   |       \---shorthair
+|   |   |           +---base
+|   |   |           |   |   shade.png
+|   |   |           |   |   
+|   |   |           |   +---eat
+|   |   |           |   +---idle
+|   |   |           |   |       004.png
+|   |   |           |   |       005.png
+|   |   |           |   |       006.png
+|   |   |           |   |       007.png
+|   |   |           |   |       008.png
+|   |   |           |   |       009.png
+|   |   |           |   |       010.png
+|   |   |           |   |       011.png
+|   |   |           |   |       012.png
+|   |   |           |   |       013.png
+|   |   |           |   |       014.png
+|   |   |           |   |       
+|   |   |           |   +---pet
+|   |   |           |   \---sleep
+|   |   |           +---eyes
+|   |   |           |   +---idle
+|   |   |           |   |       01.png
+|   |   |           |   |       01_blink.png
+|   |   |           |   |       01_color.png
+|   |   |           |   |       
+|   |   |           |   \---pet
+|   |   |           +---mouth
+|   |   |           |   +---eat
+|   |   |           |   |       01.png
+|   |   |           |   |       01_color.png
+|   |   |           |   |       
+|   |   |           |   \---idle
+|   |   |           |           01.png
+|   |   |           |           01_color.png
+|   |   |           |           
+|   |   |           \---patterns
+|   |   |               \---idle
+|   |   |                       01.png
+|   |   |                       
+|   |   +---items
+|   |   |   +---clothes
+|   |   |   |   \---hats
+|   |   |   |           hat1.png
+|   |   |   |           hat2.png
+|   |   |   |           
+|   |   |   \---food
+|   |   |           001.png
+|   |   |           
+|   |   \---ui_elements
+|   |           mirror.png
+|   |           
+|   \---sounds
++---game
+|   |   main.py
+|   |   settings.py
+|   |   __init__.py
+|   |   
+|   +---components
+|   |   |   cat_ai.py
+|   |   |   cat_fsm.py
+|   |   |   cat_renderer.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           cat_ai.cpython-312.pyc
+|   |           cat_fsm.cpython-312.pyc
+|   |           cat_renderer.cpython-312.pyc
+|   |           __init__.cpython-312.pyc
+|   |           
+|   +---core
+|   |   |   animation.py
+|   |   |   draggable_item.py
+|   |   |   resource_manager.py
+|   |   |   save_manager.py
+|   |   |   scene_manager.py
+|   |   |   ui.py
+|   |   |   utils.py
+|   |   |   
+|   |   \---__pycache__
+|   |           animation.cpython-312.pyc
+|   |           draggable_item.cpython-312.pyc
+|   |           resource_manager.cpython-312.pyc
+|   |           save_manager.cpython-312.pyc
+|   |           scene_manager.cpython-312.pyc
+|   |           ui.cpython-312.pyc
+|   |           
+|   +---entities
+|   |   |   cat-original.py
+|   |   |   cat.py
+|   |   |   items.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           cat.cpython-312.pyc
+|   |           __init__.cpython-312.pyc
+|   |           
+|   +---scenes
+|   |   |   accessory.py
+|   |   |   cat_home.py
+|   |   |   character_select.py
+|   |   |   customization.py
+|   |   |   menu.py
+|   |   |   story_mode.py
+|   |   |   __init__.py
+|   |   |   
+|   |   +---minigames
+|   |   |       fish_catcher.py
+|   |   |       __init__.py
+|   |   |       
+|   |   \---__pycache__
+|   |           accessory.cpython-312.pyc
+|   |           cat_home.cpython-312.pyc
+|   |           customization.cpython-312.pyc
+|   |           menu.cpython-312.pyc
+|   |           __init__.cpython-312.pyc
+|   |           
+|   \---__pycache__
+|           main.cpython-312.pyc
+|           settings.cpython-312.pyc
+|           __init__.cpython-312.pyc
+|           
+\---saves
+        savegame.json
+        
