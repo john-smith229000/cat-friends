@@ -7,19 +7,19 @@
     "customization": {
         "body_type": "shorthair",
         "base_color": [
-            50,
-            50,
-            50
+            230,
+            210,
+            190
         ],
         "pattern_color": [
-            50,
-            50,
+            90,
+            70,
             50
         ],
         "eye_color": [
+            70,
             150,
-            100,
-            230
+            220
         ],
         "nose_color": [
             255,

@@ -16,11 +16,8 @@ class CatHomeScene(BaseScene):
         super().__init__(scene_manager, game)
         
         # --- Simplified Cat Loading Logic ---
-        initial_data = self.game.cat_data or save_manager.load_game() or {"customization": {}}
-        self.cat = Cat(
-            position=(self.game.screen.get_width() / 2, self.game.screen.get_height() - 40),
-            initial_stats=initial_data
-        )
+        self.cat = None
+        self._recalculate_layout()
         self._recalculate_layout()
 
 
@@ -46,11 +43,19 @@ class CatHomeScene(BaseScene):
         self.food_replenish_timer = 0.0
 
     def on_enter(self, data=None):
-        if self.game.cat_data:
-            self.cat = Cat(
-                position=(self.game.screen.get_width() / 2, self.game.screen.get_height() - 40),
-                initial_stats=self.game.cat_data
-            )
+        # This is now the ONLY place the cat is created.
+        # It prioritizes data passed from the previous scene (like customization).
+        initial_data = data or self.game.cat_data or save_manager.load_game() or {"customization": {}}
+        
+        # Store the final data back to the game object for persistence
+        self.game.cat_data = initial_data
+
+        # Create the cat with the correct, consistent position.
+        self.cat = Cat(
+            position=(self.game.screen.get_width() / 2, self.game.screen.get_height() / 2 + 160),
+            initial_stats=initial_data
+        )
+
      
     def on_quit(self):
         if self.cat:

@@ -19,6 +19,9 @@ class Animation:
         self.time_accumulator = 0.0
         self.direction = 1
         self.is_done = False # False means it's active or ready to start, True means it completed (if not looping)
+        self.is_paused = True # Start paused
+        self.frames_to_play = 0 # Number of frames to play when not looping continuously
+
 
     def reset(self):
         """Resets the animation to its first frame and makes it active."""
@@ -26,6 +29,21 @@ class Animation:
         self.time_accumulator = 0.0
         self.direction = 1
         self.is_done = False # Resetting means it's no longer "done"
+        self.is_paused = True
+
+    def play(self, frame_count=None):
+        """Starts playing the animation."""
+        self.is_paused = False
+        self.is_done = False
+        if frame_count is not None:
+            self.frames_to_play = frame_count
+            self.loop = False # If we have a specific number of frames to play, it's not a continuous loop
+        else:
+            self.loop = True
+
+    def pause(self):
+        """Pauses the animation."""
+        self.is_paused = True
 
     @property
     def image(self):
@@ -44,15 +62,24 @@ class Animation:
         Advances the animation based on delta time (dt).
         dt should be in seconds.
         """
-        # If it's a non-looping animation and it's already done, do nothing.
-        if self.is_done and not self.loop and not self.pingpong: # Pingpong might still need to update after 'done' if direction changes
+        if self.is_paused or self.is_done:
             return
 
         self.time_accumulator += dt
         
-        while self.time_accumulator >= self.duration: # Use while loop to catch up if dt is large
+        while self.time_accumulator >= self.duration:
             self.time_accumulator -= self.duration
+            
+            if not self.loop and self.frames_to_play <= 0:
+                self.is_done = True
+                self.pause()
+                return
+
             self.frame_index += self.direction
+
+            if not self.loop:
+                self.frames_to_play -= 1
+
 
             if self.pingpong:
                 if self.frame_index >= len(self.frames) - 1:
@@ -60,19 +87,21 @@ class Animation:
                 elif self.frame_index <= 0:
                     self.direction = 1
                 
-                # If ping-pong and we reached the start again, and it's not a loop, then it's done.
-                if self.frame_index == 0 and self.direction == 1 and not self.loop:
-                    self.is_done = True
+                # This is the line that was causing the issue. By removing it, the animation will continue until frames_to_play is 0.
+
 
             elif self.frame_index >= len(self.frames):
                 if self.loop:
                     self.frame_index = 0
                 else:
                     self.frame_index = len(self.frames) - 1
-                    self.is_done = True # Mark as done if it's a non-looping animation that finished
-                    return # Stop updating immediately after finishing
+                    self.is_done = True
+                    self.pause()
+                    return
+
+
 
 
     def is_playing(self):
         """Returns True if the animation is currently active (not done if non-looping)."""
-        return not self.is_done
+        return not self.is_paused and not self.is_done

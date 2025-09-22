@@ -24,7 +24,7 @@ class CatCustomizationScene(BaseScene):
         }
         
         # Create the cat instance that we will show on screen
-        self.cat_preview = Cat((self.game.screen.get_width() / 2, self.game.screen.get_height() / 2 + 250), {"customization": self.cat_data})
+        self.cat_preview = Cat((self.game.screen.get_width() / 2, self.game.screen.get_height() / 2), {"customization": self.cat_data})
         
         # Pre-defined color palettes
         self.palettes = {
@@ -96,7 +96,7 @@ class CatCustomizationScene(BaseScene):
         if event.type == pygame.VIDEORESIZE:
             self._recalculate_layout()
             # Also update preview position
-            self.cat_preview.position = (self.game.screen.get_width() / 2, self.game.screen.get_height() / 2 + 250)
+            self.cat_preview.position = (self.game.screen.get_width() / 2, self.game.screen.get_height() / 2)
 
         for btn in self.category_buttons + self.color_buttons + [self.confirm_button]:
             btn.handle_event(event)
@@ -112,6 +112,7 @@ class CatCustomizationScene(BaseScene):
             btn.draw(screen)
 
     def _on_confirm(self):
-        """Finalizes the cat and moves to the main game scene."""
-        self.game.cat_data = {"customization": self.cat_data}
-        self.scene_manager.set_scene(CatHomeScene)
+        """Finalizes the cat and moves to the main game scene, passing data directly."""
+        final_cat_data = {"customization": self.cat_data}
+        # We no longer set self.game.cat_data here. We pass it directly.
+        self.scene_manager.set_scene(CatHomeScene, data=final_cat_data)

@@ -96,6 +96,15 @@ class Cat:
         self.target_position = None
         self.movement_speed = 100  # pixels per second
 
+        self.idle_animation_timer = random.uniform(2, 7)
+        self.is_playing_idle_sequence = False
+
+        # --- Blink animation logic ---
+        self.blink_timer = random.uniform(2.2, 7.4)
+        self.is_blinking = False
+        self.blink_duration = 0.20  # How long the blink itself lasts
+        self.blink_duration_timer = 0.0
+
         # Initial composite
         self._composite_image()
 
@@ -121,12 +130,13 @@ class Cat:
             "base": {"idle": base_frames},
         }
         
-        # Try to load optional layers, but don't fail if they're missing
+    # Try to load optional layers, but don't fail if they're missing
         optional_layers = {
             "shade": f"{path_prefix}/base/shade.png",
             "pattern": f"{path_prefix}/patterns/idle/01.png",
             "eye_color": f"{path_prefix}/eyes/idle/01_color.png",
             "eye_outline": f"{path_prefix}/eyes/idle/01.png",
+            "eye_blink": f"{path_prefix}/eyes/idle/01_blink.png", 
             "mouth_color": f"{path_prefix}/mouth/idle/01_color.png",
             "mouth_outline": f"{path_prefix}/mouth/idle/01.png",
         }
@@ -199,18 +209,21 @@ class Cat:
             final_image.blit(self.layers["mouth_outline"], (0, 0))
 
         # Eyes
-        eye_color = self.customization_data.get("eye_color", (70, 150, 220))
-        if self.layers.get("eye_color"):
-            eye_layer = pygame.Surface(self.layers["eye_color"].get_size(), pygame.SRCALPHA)
-            eye_layer.fill((*eye_color, 255))
+        if self.is_blinking and self.layers.get("eye_blink"):
+            final_image.blit(self.layers["eye_blink"], (0, 0))
+        else:
+            eye_color = self.customization_data.get("eye_color", (70, 150, 220))
+            if self.layers.get("eye_color"):
+                eye_layer = pygame.Surface(self.layers["eye_color"].get_size(), pygame.SRCALPHA)
+                eye_layer.fill((*eye_color, 255))
+                
+                colored_eyes = self.layers["eye_color"].copy()
+                colored_eyes.blit(eye_layer, (0, 0), special_flags=pygame.BLEND_MULT)
+                
+                final_image.blit(colored_eyes, (0, 0))
             
-            colored_eyes = self.layers["eye_color"].copy()
-            colored_eyes.blit(eye_layer, (0, 0), special_flags=pygame.BLEND_MULT)
-            
-            final_image.blit(colored_eyes, (0, 0))
-        
-        if self.layers.get("eye_outline"):
-            final_image.blit(self.layers["eye_outline"], (0, 0))
+            if self.layers.get("eye_outline"):
+                final_image.blit(self.layers["eye_outline"], (0, 0))
 
         # Store the original unscaled image
         self.image = final_image
@@ -260,6 +273,34 @@ class Cat:
     
     def update(self, dt):
         """Updates the cat's animation, movement, and re-composites the image."""
+        
+        # Handle idle animation logic
+        if self.state == "idle":
+            self.idle_animation_timer -= dt
+            if self.idle_animation_timer <= 0 and not self.is_playing_idle_sequence:
+                self.is_playing_idle_sequence = True
+                num_frames = len(self.base_animation.frames)
+                # A full loop for ping-pong is (num_frames - 1) * 2
+                frames_to_play = (num_frames - 1) * 2 + random.randint(0, num_frames - 1)
+                self.base_animation.play(frames_to_play)
+
+            if self.is_playing_idle_sequence and self.base_animation.is_done:
+                self.is_playing_idle_sequence = False
+                self.idle_animation_timer = random.uniform(1, 4)
+            
+            # Handle blink animation logic
+            if not self.is_blinking:
+                self.blink_timer -= dt
+                if self.blink_timer <= 0:
+                    self.is_blinking = True
+                    self.blink_duration_timer = self.blink_duration
+            else:
+                self.blink_duration_timer -= dt
+                if self.blink_duration_timer <= 0:
+                    self.is_blinking = False
+                    self.blink_timer = random.uniform(1, 5)
+        
+        
         # Update animation
         self.base_animation.update(dt)
         
