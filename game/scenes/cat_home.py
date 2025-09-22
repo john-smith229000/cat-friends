@@ -55,8 +55,9 @@ class CatHomeScene(BaseScene):
         #self.instructions_rect = self.instructions_surf.get_rect(center=(current_width / 2, 30))
         
         self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24, bold=True)
+        self.hud_rect = pygame.Rect(15, 15, 210, 145)
         
-        self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.5)
+        self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.2)
         self.mirror_rect = self.mirror_image.get_rect(topleft=(20, 250))
 
         self.food_replenish_delay = 1.0
@@ -229,31 +230,31 @@ class CatHomeScene(BaseScene):
         # --- Normal Dirty Rect Logic for subsequent frames ---
         dirty_rects = []
         
-        # Redraw the portion of the background under the cat and food item's last positions
+        # Redraw the portion of the background under moving/changing elements
         screen.blit(self.background_image, self.cat.last_rect, self.cat.last_rect.move(-self.background_x, -self.background_y))
         dirty_rects.append(self.cat.last_rect)
 
         screen.blit(self.background_image, self.food_item.last_rect, self.food_item.last_rect.move(-self.background_x, -self.background_y))
         dirty_rects.append(self.food_item.last_rect)
 
-        # Step 2: Draw everything and collect their new rects to be updated
+        # *** FIX: Redraw the background under the HUD to prevent smearing ***
+        screen.blit(self.background_image, self.hud_rect, self.hud_rect.move(-self.background_x, -self.background_y))
+        dirty_rects.append(self.hud_rect)
+
+        screen.blit(self.background_image, self.mirror_rect, self.mirror_rect.move(-self.background_x, -self.background_y))
+
+        # Draw all dynamic elements and collect their new rects
         self.cat.draw(screen)
         dirty_rects.append(self.cat.rect)
 
         self.food_item.draw(screen)
         dirty_rects.append(self.food_item.rect)
         
-        # Redraw all static UI elements to prevent trails
+        # Redraw all static UI elements to prevent trails from moving objects
         screen.blit(self.mirror_image, self.mirror_rect)
         dirty_rects.append(self.mirror_rect)
         
-        #instruction_bg_rect = self.instructions_rect.inflate(20, 10)
-        #pygame.draw.rect(screen, (0, 0, 0, 150), instruction_bg_rect)
-        #screen.blit(self.instructions_surf, self.instructions_rect)
-        #dirty_rects.append(instruction_bg_rect)
-        
-        hud_rect = pygame.Rect(20, 20, 200, 130)
+        # Draw the HUD itself
         self._draw_hud(screen)
-        dirty_rects.append(hud_rect)
 
         return dirty_rects
