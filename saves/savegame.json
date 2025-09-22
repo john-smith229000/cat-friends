@@ -1,8 +1,8 @@
 {
     "cat_id": "cat01",
-    "hunger": 92.0392066478729,
-    "happiness": 90.71615719795219,
+    "hunger": 96.30398707389836,
+    "happiness": 97.35511837005622,
     "accessories": {
-        "head": "hat2"
+        "head": null
     }
 }
