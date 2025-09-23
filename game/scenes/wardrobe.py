@@ -1,6 +1,7 @@
 # game/scenes/wardrobe.py
 
 import pygame
+import copy
 from settings import *
 from core.scene_manager import BaseScene
 from core.ui import Button
@@ -109,7 +110,7 @@ class WardrobeScene(BaseScene):
             return
         
         # Store original data for cancel functionality
-        self.original_cat_data = data.copy()
+        self.original_cat_data = copy.deepcopy(data)
         
         # Create cat preview with better positioning and scale
         current_width, current_height = self.game.screen.get_size()

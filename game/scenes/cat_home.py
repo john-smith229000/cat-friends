@@ -54,7 +54,7 @@ class CatHomeScene(BaseScene):
         #self.instructions_surf = self.font.render("Drag food to cat! Click & Hold cat to pet! (ESC to exit)", True, WHITE)
         #self.instructions_rect = self.instructions_surf.get_rect(center=(current_width / 2, 30))
         
-        self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24, bold=True)
+        self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24)
         self.hud_rect = pygame.Rect(15, 15, 210, 145)
         
         self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.2)
@@ -104,12 +104,15 @@ class CatHomeScene(BaseScene):
             current_width, current_height = self.game.screen.get_size()
             cat_y_pos = current_height * 0.75
             
-            # Create new cat with updated data
+            # *** FIX: Calculate the cat's screen position the same way as on_enter ***
+            resumed_cat_screen_x = self.cat_world_x + self.background_x
+            
+            # Create new cat with updated data and the CORRECT position
             self.cat = Cat(
-                position=(current_width / 2, cat_y_pos),
+                position=(resumed_cat_screen_x, cat_y_pos),
                 initial_stats=self.game.cat_data
             )
-     
+        
     def on_quit(self):
         if self.cat:
             save_manager.save_game(self.cat.to_dict())
@@ -126,24 +129,38 @@ class CatHomeScene(BaseScene):
     def handle_event(self, event):
         if event.type == pygame.VIDEORESIZE:
             self._recalculate_layout()
-            
-        if self.food_item.visible:
-            self.food_item.handle_event(event)
+
+        # The cat handles its own events (like petting)
         self.cat.handle_event(event)
 
-        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            # Check mirror click first
-            if self.handle_mirror_click(event.pos):
-                return  # Mirror was clicked, don't process other clicks
-            
+        # CatHomeScene handles ALL dragging logic
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.food_item.visible and self.food_item.rect.collidepoint(event.pos):
+                self.food_item.is_dragging = True
+                self.food_item.offset_x = event.pos[0] - self.food_item.rect.x
+                self.food_item.offset_y = event.pos[1] - self.food_item.rect.y
+            else:
+                # Handle non-drag clicks immediately
+                self.handle_mirror_click(event.pos)
+        
+        elif event.type == pygame.MOUSEMOTION:
+            if self.food_item.is_dragging:
+                self.food_item.handle_drag_motion(event.pos)
+                # Force a full redraw while dragging to prevent trails
+                self.force_redraw = True
+
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             if self.food_item.is_dragging:
                 self.food_item.is_dragging = False
-                # Check for collision when food is dropped
                 if self.cat.collides_with_item(self.food_item):
                     self.cat.feed()
                     self.food_item.hide()
                 else:
+                    # Manually dirty the area where the food was dropped
+                    self.dirty_rects.append(self.food_item.rect.copy())
                     self.food_item.reset_position()
+                # Force redraw after dropping to clean up
+                self.force_redraw = True
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -212,49 +229,53 @@ class CatHomeScene(BaseScene):
             self.game.cat_data = self.cat.to_dict()
 
     def draw(self, screen):
-        # If a full redraw is needed (first frame or after resize)
+        # If a full redraw is needed, do it once and return
         if self.force_redraw:
             screen.blit(self.background_image, (self.background_x, self.background_y))
-            # Draw all elements once
             self.cat.draw(screen)
             self.food_item.draw(screen)
             screen.blit(self.mirror_image, self.mirror_rect)
-            #instruction_bg_rect = self.instructions_rect.inflate(20, 10)
-            #pygame.draw.rect(screen, (0, 0, 0, 150), instruction_bg_rect)
-            #screen.blit(self.instructions_surf, self.instructions_rect)
             self._draw_hud(screen)
             
             self.force_redraw = False
-            return [screen.get_rect()] # Return the whole screen rect to update everything
+            return [screen.get_rect()]
 
-        # --- Normal Dirty Rect Logic for subsequent frames ---
-        dirty_rects = []
+        # --- Robust Dirty Rect Logic ---
+        # 1. Start with a fresh list of areas to update for this frame.
+        rects_to_update = []
+
+        # 2. Add the last known positions of any moving objects.
+        rects_to_update.append(self.cat.last_rect)
+        rects_to_update.append(self.food_item.last_rect)
         
-        # Redraw the portion of the background under moving/changing elements
-        screen.blit(self.background_image, self.cat.last_rect, self.cat.last_rect.move(-self.background_x, -self.background_y))
-        dirty_rects.append(self.cat.last_rect)
+        # 3. Add any special one-time dirty rects (like a drop location).
+        rects_to_update.extend(self.dirty_rects)
+        self.dirty_rects = [] # Clear the special list after using it.
 
-        screen.blit(self.background_image, self.food_item.last_rect, self.food_item.last_rect.move(-self.background_x, -self.background_y))
-        dirty_rects.append(self.food_item.last_rect)
+        # 4. Redraw the background over all these "dirty" areas.
+        for rect in rects_to_update:
+            if rect:
+                screen.blit(self.background_image, rect, rect.move(-self.background_x, -self.background_y))
 
-        # *** FIX: Redraw the background under the HUD to prevent smearing ***
-        screen.blit(self.background_image, self.hud_rect, self.hud_rect.move(-self.background_x, -self.background_y))
-        dirty_rects.append(self.hud_rect)
-
-        screen.blit(self.background_image, self.mirror_rect, self.mirror_rect.move(-self.background_x, -self.background_y))
-
-        # Draw all dynamic elements and collect their new rects
+        # 5. Draw the cat and food item in their new positions.
         self.cat.draw(screen)
-        dirty_rects.append(self.cat.rect)
-
         self.food_item.draw(screen)
-        dirty_rects.append(self.food_item.rect)
-        
-        # Redraw all static UI elements to prevent trails from moving objects
+
+        # 6. Add the new positions to the final update list.
+        rects_to_update.append(self.cat.rect)
+        rects_to_update.append(self.food_item.rect)
+
+        # 7. *** FIX: Redraw the background under the HUD to prevent smearing ***
+        screen.blit(self.background_image, self.hud_rect, self.hud_rect.move(-self.background_x, -self.background_y))
+        rects_to_update.append(self.hud_rect)
+
+        # 8. *** FIX: Redraw the background under the mirror icon to prevent smearing ***
+        screen.blit(self.background_image, self.mirror_rect, self.mirror_rect.move(-self.background_x, -self.background_y))
+        rects_to_update.append(self.mirror_rect)
+
+        # 9. Redraw the static UI elements
         screen.blit(self.mirror_image, self.mirror_rect)
-        dirty_rects.append(self.mirror_rect)
-        
-        # Draw the HUD itself
         self._draw_hud(screen)
 
-        return dirty_rects
+        # Return a filtered list of valid rectangles to be updated on screen.
+        return [r for r in rects_to_update if r]
