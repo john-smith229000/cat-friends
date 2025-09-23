@@ -8,6 +8,7 @@ from settings import *
 from core.scene_manager import SceneManager
 from scenes.menu import MenuScene
 from core.sound_manager import sounds
+from core.resource_manager import resources
 
 class Game:
     def __init__(self):
@@ -21,6 +22,12 @@ class Game:
         
         # Create window with resizable flag - this allows proper maximize behavior
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+
+        try:
+            icon = resources.load_image("images/ui_elements/cat_icon.png", scale=(64, 64))  
+            pygame.display.set_icon(icon)
+        except FileNotFoundError:
+            print("No custom icon found, using default snake icon.")
         
         self.clock = pygame.time.Clock()
         self.last_time = time.time()
