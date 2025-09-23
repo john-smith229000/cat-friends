@@ -1,4 +1,4 @@
-# entities/cat.py (Refactored)
+# game/entities/cat.py 
 
 import pygame
 from core.animation import Animation
@@ -7,6 +7,7 @@ from entities.components.cat_stats import CatStats
 from entities.components.cat_behavior import CatBehavior
 from entities.components.cat_user_interactions import CatUserInteractions
 from entities.components.cat_data import CatData
+from entities.components.cat_chat import CatChat
 
 class Cat:
     """
@@ -20,6 +21,10 @@ class Cat:
         self.behavior = CatBehavior(position)
         self.interactions = CatUserInteractions()
         self.renderer = CatRenderer(self.data.customization_data, self.data.body_type, scale)
+        
+        # FIX: Initialize the chat component
+        cat_name = initial_stats.get('name', 'kitty')
+        self.chat = CatChat(cat_name)
         
         # Animation setup
         self.base_animation = Animation(self.renderer.layers['base']['idle'], 0.1, loop=False, pingpong=True)
@@ -78,6 +83,10 @@ class Cat:
         self.interactions.handle_event(event, self.rect, self.mask)
 
     # Public interface methods (maintaining compatibility)
+    def get_chat_response(self, player_input):
+        """Gets a chat response from the chat component."""
+        return self.chat.get_response(player_input)
+
     def feed(self):
         self.stats.feed()
 

@@ -20,13 +20,19 @@ class CatHomeScene(BaseScene):
         self.cat = None
         self.background_x = 0
         self.background_y = 0 # New variable for vertical position
-        self.background_y_offset = 450 # Shift the background down by this many pixels
+        self.background_y_offset = 600 # Shift the background down by this many pixels
         self.pan_speed = 200 # pixels per second
-        self.zoom_factor = 2.2
+        self.zoom_factor = 2.5
         self.cat_world_x = 0
         self._recalculate_layout()
         self.dirty_rects = []
         self.force_redraw = True
+
+        self.is_chatting = False
+        self.chat_input_text = ""
+        self.chat_response_text = ""
+        self.chat_response_timer = 0.0
+        self.chat_response_duration = 4.0
 
     def _recalculate_layout(self):
         current_width, current_height = self.game.screen.get_size()
@@ -68,12 +74,26 @@ class CatHomeScene(BaseScene):
         self.vol_up_button = Button(rect=(current_width - 90, button_y, 50, 50), text="+", callback=sounds.increase_volume)
         self.volume_buttons = [self.vol_down_button, self.mute_button, self.vol_up_button]
 
+        # --- Chat UI Layout ---
+        self.chat_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 28)
+        input_box_height = 40
+        chat_box_width = 600
+        start_x = (current_width - chat_box_width) / 2
+
+        self.chat_input_rect = pygame.Rect(
+            start_x, 
+            current_height - input_box_height - 10, 
+            chat_box_width, 
+            input_box_height
+        )
+        self.chat_response_rect = None
+
         self.food_replenish_delay = 1.0
         self.food_replenish_timer = 0.0
 
         if self.cat:
             # If cat exists (e.g., on resize), update its position based on the new layout
-            cat_y_pos = current_height * 0.75
+            cat_y_pos = current_height * 0.65
             new_cat_screen_x = self.cat_world_x + self.background_x
             self.cat.set_position(new_cat_screen_x, cat_y_pos)
 
@@ -103,7 +123,7 @@ class CatHomeScene(BaseScene):
 
         # Create the cat with the correct, consistent position.
         current_height = self.game.screen.get_size()[1]
-        cat_y_pos = current_height * 0.75 # Consistent relative position
+        cat_y_pos = current_height * 0.65 # Consistent relative position
         
         # Calculate initial screen position based on the background offset
         initial_cat_screen_x = self.cat_world_x + self.background_x
@@ -124,7 +144,7 @@ class CatHomeScene(BaseScene):
         if self.game.cat_data and self.cat:
             # Update the existing cat with new data
             current_width, current_height = self.game.screen.get_size()
-            cat_y_pos = current_height * 0.75
+            cat_y_pos = current_height * 0.65
             
             # *** FIX: Calculate the cat's screen position the same way as on_enter ***
             resumed_cat_screen_x = self.cat_world_x + self.background_x
@@ -149,29 +169,63 @@ class CatHomeScene(BaseScene):
         return False
 
     def handle_event(self, event):
+        # --- 1. Handle Chat Input First ---
+        # If we are chatting, all keyboard events go to the chat box.
+        if self.is_chatting:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    self.chat_response_text = self.cat.get_chat_response(self.chat_input_text)
+                    self.chat_response_timer = self.chat_response_duration
+                    self.is_chatting = False
+                    self.chat_input_text = ""
+                    sounds.play_effect("effects/meow.wav")
+                elif event.key == pygame.K_BACKSPACE:
+                    self.chat_input_text = self.chat_input_text[:-1]
+                elif event.key == pygame.K_ESCAPE:
+                    self.is_chatting = False
+                    self.chat_input_text = ""
+                else:
+                    self.chat_input_text += event.unicode
+                self.force_redraw = True
+            
+            # CRITICAL: Stop processing other events while chatting.
+            return 
+
+        # --- 2. Handle Global Scene Events ---
+        # These events are not blocked by the chat.
         if event.type == pygame.VIDEORESIZE:
             self._recalculate_layout()
+        
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                from scenes.menu import MenuScene
+                self.scene_manager.set_scene(MenuScene)
 
-        # The cat handles its own events (like petting)
+        # --- 3. Handle UI and Game Object Events ---
+        # These are processed if we are NOT chatting.
         self.cat.handle_event(event)
-
         for button in self.volume_buttons:
             button.handle_event(event)
 
-        # CatHomeScene handles ALL dragging logic
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.food_item.visible and self.food_item.rect.collidepoint(event.pos):
-                self.food_item.is_dragging = True
-                self.food_item.offset_x = event.pos[0] - self.food_item.rect.x
-                self.food_item.offset_y = event.pos[1] - self.food_item.rect.y
-            else:
-                # Handle non-drag clicks immediately
-                self.handle_mirror_click(event.pos)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1: # Left-click
+                if self.food_item.visible and self.food_item.rect.collidepoint(event.pos):
+                    self.food_item.is_dragging = True
+                    self.food_item.offset_x = event.pos[0] - self.food_item.rect.x
+                    self.food_item.offset_y = event.pos[1] - self.food_item.rect.y
+                else:
+                    self.handle_mirror_click(event.pos)
+            elif event.button == 3: # Right-click
+                if self.cat.rect.collidepoint(event.pos):
+                    sounds.play_effect("effects/meow.wav")
+                    self.is_chatting = True
+                    self.chat_input_text = ""
+                    self.chat_response_text = ""
+                    self.force_redraw = True
         
         elif event.type == pygame.MOUSEMOTION:
             if self.food_item.is_dragging:
                 self.food_item.handle_drag_motion(event.pos)
-                # Force a full redraw while dragging to prevent trails
                 self.force_redraw = True
 
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -182,18 +236,17 @@ class CatHomeScene(BaseScene):
                     self.food_item.hide()
                     sounds.play_effect("effects/eat.wav")
                 else:
-                    # Manually dirty the area where the food was dropped
                     self.dirty_rects.append(self.food_item.rect.copy())
                     self.food_item.reset_position()
-                # Force redraw after dropping to clean up
                 self.force_redraw = True
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                from scenes.menu import MenuScene
-                self.scene_manager.set_scene(MenuScene)
-
     def update(self, dt):
+        if self.chat_response_timer > 0:
+            self.chat_response_timer -= dt
+            if self.chat_response_timer <= 0:
+                self.chat_response_text = ""
+                self.force_redraw = True # Redraw to clear the text
+
         keys = pygame.key.get_pressed()
         panned = False
         if keys[pygame.K_LEFT]:
@@ -249,6 +302,22 @@ class CatHomeScene(BaseScene):
         hun_width = (self.cat.hunger / self.cat.max_stat) * 200
         pygame.draw.rect(screen, (200, 150, 50), (20, 120, hun_width, 25))
         pygame.draw.rect(screen, WHITE, (20, 120, 200, 25), 2)
+    
+    def _draw_chat_ui(self, screen):
+        """Draws the chat input box and the cat's response."""
+        # Draw the cat's response above its head
+        if self.chat_response_timer > 0 and self.chat_response_text:
+            response_surf = self.chat_font.render(self.chat_response_text, True, BLACK, (255, 255, 255, 200))
+            self.chat_response_rect = response_surf.get_rect(midbottom=(self.cat.rect.centerx, self.cat.rect.top - 10))
+            pygame.draw.rect(screen, (255, 255, 255, 200), self.chat_response_rect.inflate(10, 10), border_radius=8)
+            screen.blit(response_surf, self.chat_response_rect)
+        
+        # Draw the input box if chatting
+        if self.is_chatting:
+            pygame.draw.rect(screen, WHITE, self.chat_input_rect, border_radius=5)
+            pygame.draw.rect(screen, BLACK, self.chat_input_rect, 2, border_radius=5)
+            input_surf = self.chat_font.render(self.chat_input_text, True, BLACK)
+            screen.blit(input_surf, (self.chat_input_rect.x + 10, self.chat_input_rect.y + 5))
         
     def on_exit(self):
         if self.cat:
@@ -265,6 +334,9 @@ class CatHomeScene(BaseScene):
             
             for button in self.volume_buttons:
                 button.draw(screen)
+                
+            # FIX: Draw chat UI only once during full redraw
+            self._draw_chat_ui(screen)
                 
             self.force_redraw = False
             return [screen.get_rect()]
@@ -283,6 +355,11 @@ class CatHomeScene(BaseScene):
         for button in self.volume_buttons:
             rects_to_update.append(button.rect)
 
+        # Add chat UI rects to be cleaned
+        rects_to_update.append(self.chat_input_rect)
+        if self.chat_response_rect:
+             rects_to_update.append(self.chat_response_rect)
+
         # 2. Add any special one-time dirty rects.
         rects_to_update.extend(self.dirty_rects)
         self.dirty_rects = []
@@ -300,6 +377,9 @@ class CatHomeScene(BaseScene):
 
         for button in self.volume_buttons:
             button.draw(screen)
+            
+        # FIX: Draw chat UI only once during dirty rect updates
+        self._draw_chat_ui(screen)
 
         # 5. Add the new positions to the final update list.
         rects_to_update.append(self.cat.rect)

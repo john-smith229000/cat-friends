@@ -1,9 +1,11 @@
 {
     "cat_id": "custom_cat",
-    "hunger": 94.60745459794964,
-    "happiness": 93.40870857238743,
+    "hunger": 94.38930889368046,
+    "happiness": 94.51611000299445,
     "energy": 100.0,
-    "accessories": {},
+    "accessories": {
+        "head": "hat1"
+    },
     "customization": {
         "body_type": "shorthair",
         "base_color": [

@@ -43,22 +43,19 @@ class Game:
             self.last_time = now
 
             for event in pygame.event.get():
+                # --- The main loop ONLY handles events that close the game or resize the window ---
                 if event.type == pygame.QUIT:
                     self.running = False
                 elif event.type == pygame.VIDEORESIZE:
-                    # Handle window resize - update screen surface
-                    if not self.fullscreen:  # Only handle resize in windowed mode
+                    if not self.fullscreen:
                         self.screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_f:
-                        # F key for fullscreen
-                        self.toggle_borderless_fullscreen()
                 
+                # --- All other events are passed to the current scene to handle ---
                 self.scene_manager.handle_event(event)
 
             self.scene_manager.update(dt)
             dirty_rects = self.scene_manager.draw()
-            pygame.display.update(dirty_rects) # Pass the list of updated rects
+            pygame.display.update(dirty_rects) 
             
             self.clock.tick(FPS)
             
