@@ -240,42 +240,35 @@ class CatHomeScene(BaseScene):
             self.force_redraw = False
             return [screen.get_rect()]
 
-        # --- Robust Dirty Rect Logic ---
-        # 1. Start with a fresh list of areas to update for this frame.
+        # --- REVISED Dirty Rect Logic ---
         rects_to_update = []
 
-        # 2. Add the last known positions of any moving objects.
+        # 1. Add last known positions of ALL potentially overlapping items.
         rects_to_update.append(self.cat.last_rect)
         rects_to_update.append(self.food_item.last_rect)
-        
-        # 3. Add any special one-time dirty rects (like a drop location).
-        rects_to_update.extend(self.dirty_rects)
-        self.dirty_rects = [] # Clear the special list after using it.
-
-        # 4. Redraw the background over all these "dirty" areas.
-        for rect in rects_to_update:
-            if rect:
-                screen.blit(self.background_image, rect, rect.move(-self.background_x, -self.background_y))
-
-        # 5. Draw the cat and food item in their new positions.
-        self.cat.draw(screen)
-        self.food_item.draw(screen)
-
-        # 6. Add the new positions to the final update list.
-        rects_to_update.append(self.cat.rect)
-        rects_to_update.append(self.food_item.rect)
-
-        # 7. *** FIX: Redraw the background under the HUD to prevent smearing ***
-        screen.blit(self.background_image, self.hud_rect, self.hud_rect.move(-self.background_x, -self.background_y))
+        # Add the static UI elements' rects to ensure the area is cleaned
+        # if the cat moves away from behind them.
+        rects_to_update.append(self.mirror_rect)
         rects_to_update.append(self.hud_rect)
 
-        # 8. *** FIX: Redraw the background under the mirror icon to prevent smearing ***
-        screen.blit(self.background_image, self.mirror_rect, self.mirror_rect.move(-self.background_x, -self.background_y))
-        rects_to_update.append(self.mirror_rect)
+        # 2. Add any special one-time dirty rects.
+        rects_to_update.extend(self.dirty_rects)
+        self.dirty_rects = []
 
-        # 9. Redraw the static UI elements
+        # 3. Redraw the background ONCE over all dirty areas.
+        # Filter out any None rects before iterating.
+        for rect in filter(None, rects_to_update):
+            screen.blit(self.background_image, rect, rect.move(-self.background_x, -self.background_y))
+
+        # 4. Draw all entities and UI in their NEW positions, in the correct order.
+        self.cat.draw(screen)
+        self.food_item.draw(screen)
         screen.blit(self.mirror_image, self.mirror_rect)
         self._draw_hud(screen)
 
-        # Return a filtered list of valid rectangles to be updated on screen.
+        # 5. Add the new positions to the final update list.
+        rects_to_update.append(self.cat.rect)
+        rects_to_update.append(self.food_item.rect)
+        # The mirror and HUD rects are already in the list, so they will be updated.
+
         return [r for r in rects_to_update if r]
