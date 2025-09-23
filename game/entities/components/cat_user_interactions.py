@@ -2,6 +2,7 @@
 
 import pygame
 import random
+from core.sound_manager import sounds
 
 class CatUserInteractions:
     """Handles all user interactions like petting, feeding, clicking."""
@@ -28,6 +29,7 @@ class CatUserInteractions:
                 pos_in_mask = (event.pos[0] - rect.x, event.pos[1] - rect.y)
                 if mask and mask.get_at(pos_in_mask):
                     self.is_being_petted = True
+                    sounds.play_effect("effects/purr.wav")
         
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1 and self.is_being_petted:

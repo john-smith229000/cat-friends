@@ -1,10 +1,12 @@
 # game/core/ui.py
 
 import pygame
+from settings import *
+from core.sound_manager import sounds
 
 class Button:
     """A simple, clickable button with text."""
-    def __init__(self, rect, text, callback, font_name="Arial", font_size=32):
+    def __init__(self, rect, text, callback, font_name=DEFAULT_FONT_NAME, font_size=32):
         self.rect = pygame.Rect(rect)
         self.text = text
         self.callback = callback
@@ -31,6 +33,7 @@ class Button:
                 self.is_pressed = True
         elif event.type == pygame.MOUSEBUTTONUP:
             if self.is_hovered and self.is_pressed and event.button == 1:
+                sounds.play_effect("effects/button_slash.wav")
                 # Execute the callback function on click release
                 self.callback()
             self.is_pressed = False

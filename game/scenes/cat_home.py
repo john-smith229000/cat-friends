@@ -3,6 +3,8 @@
 import pygame
 
 from settings import *
+from core.sound_manager import sounds
+from core.ui import Button
 from core.scene_manager import BaseScene
 from core.resource_manager import resources
 from entities.cat import Cat
@@ -60,6 +62,12 @@ class CatHomeScene(BaseScene):
         self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.2)
         self.mirror_rect = self.mirror_image.get_rect(topleft=(20, 250))
 
+        button_y = current_height - 60
+        self.vol_down_button = Button(rect=(current_width - 240, button_y, 50, 50), text="-", callback=sounds.decrease_volume)
+        self.mute_button = Button(rect=(current_width - 180, button_y, 80, 50), text="Mute", callback=self.toggle_mute_text)
+        self.vol_up_button = Button(rect=(current_width - 90, button_y, 50, 50), text="+", callback=sounds.increase_volume)
+        self.volume_buttons = [self.vol_down_button, self.mute_button, self.vol_up_button]
+
         self.food_replenish_delay = 1.0
         self.food_replenish_timer = 0.0
 
@@ -71,7 +79,21 @@ class CatHomeScene(BaseScene):
 
         self.force_redraw = True
 
+    def toggle_mute_text(self):
+        """Wrapper to toggle mute and update button text."""
+        sounds.toggle_mute()
+        if sounds.is_muted:
+            self.mute_button.text = "Unmute"
+        else:
+            self.mute_button.text = "Mute"
+        # We need to re-render the button's text surface
+        self.mute_button.text_surf = self.mute_button.font.render(self.mute_button.text, True, self.mute_button.text_color)
+        self.mute_button.text_rect = self.mute_button.text_surf.get_rect(center=self.mute_button.rect.center)
+        self.force_redraw = True # Force a redraw to show text change
+
     def on_enter(self, data=None):
+        if not pygame.mixer.music.get_busy():
+            sounds.play_music("music/background_music.ogg")
         # This is now the ONLY place the cat is created.
         # It prioritizes data passed from the previous scene (like customization).
         initial_data = data or self.game.cat_data or save_manager.load_game() or {"customization": {}}
@@ -133,6 +155,9 @@ class CatHomeScene(BaseScene):
         # The cat handles its own events (like petting)
         self.cat.handle_event(event)
 
+        for button in self.volume_buttons:
+            button.handle_event(event)
+
         # CatHomeScene handles ALL dragging logic
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.food_item.visible and self.food_item.rect.collidepoint(event.pos):
@@ -155,6 +180,7 @@ class CatHomeScene(BaseScene):
                 if self.cat.collides_with_item(self.food_item):
                     self.cat.feed()
                     self.food_item.hide()
+                    sounds.play_effect("effects/eat.wav")
                 else:
                     # Manually dirty the area where the food was dropped
                     self.dirty_rects.append(self.food_item.rect.copy())
@@ -237,6 +263,9 @@ class CatHomeScene(BaseScene):
             screen.blit(self.mirror_image, self.mirror_rect)
             self._draw_hud(screen)
             
+            for button in self.volume_buttons:
+                button.draw(screen)
+                
             self.force_redraw = False
             return [screen.get_rect()]
 
@@ -250,6 +279,9 @@ class CatHomeScene(BaseScene):
         # if the cat moves away from behind them.
         rects_to_update.append(self.mirror_rect)
         rects_to_update.append(self.hud_rect)
+
+        for button in self.volume_buttons:
+            rects_to_update.append(button.rect)
 
         # 2. Add any special one-time dirty rects.
         rects_to_update.extend(self.dirty_rects)
@@ -265,6 +297,9 @@ class CatHomeScene(BaseScene):
         self.food_item.draw(screen)
         screen.blit(self.mirror_image, self.mirror_rect)
         self._draw_hud(screen)
+
+        for button in self.volume_buttons:
+            button.draw(screen)
 
         # 5. Add the new positions to the final update list.
         rects_to_update.append(self.cat.rect)

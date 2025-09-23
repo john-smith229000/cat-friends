@@ -24,8 +24,8 @@ DEFAULT_FONT_SIZE = 32
 MAX_STAT_VALUE = 100.0
 
 # Values are in points-per-second
-HUNGER_DECAY_RATE = 0.2
-HAPPINESS_DECAY_RATE = 0.2
+HUNGER_DECAY_RATE = 0.05
+HAPPINESS_DECAY_RATE = 0.05
 HAPPINESS_INCREASE_RATE = 15.0 # While being petted
 
 # Values are in points-per-action

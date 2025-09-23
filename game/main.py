@@ -7,6 +7,7 @@ import time
 from settings import *
 from core.scene_manager import SceneManager
 from scenes.menu import MenuScene
+from core.sound_manager import sounds
 
 class Game:
     def __init__(self):
