@@ -61,6 +61,8 @@ class Game:
                 self.scene_manager.handle_event(event)
 
             self.scene_manager.update(dt)
+            
+            # This is now the single source of truth for drawing
             dirty_rects = self.scene_manager.draw()
             pygame.display.update(dirty_rects) 
             

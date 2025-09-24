@@ -227,6 +227,8 @@ class WardrobeScene(BaseScene):
             inst_surf = pygame.font.SysFont(DEFAULT_FONT_NAME, 18).render(instruction, True, (180, 180, 180))
             screen.blit(inst_surf, (50, screen.get_height() - 120 + i * 20))
 
+        return [screen.get_rect()]
+
     def _select_category(self, category):
         """Switch to a different accessory category."""
         self.current_category = category
@@ -260,23 +262,21 @@ class WardrobeScene(BaseScene):
             current_index = self.current_indices[self.current_category]
             selected_item = current_items[current_index]
             
+            # --- FIX: Access accessories through the 'data' component ---
             if selected_item == "None":
-                # Remove the accessory
-                if self.current_category in self.cat_preview.accessories:
-                    del self.cat_preview.accessories[self.current_category]
+                if self.current_category in self.cat_preview.data.accessories:
+                    del self.cat_preview.data.accessories[self.current_category]
             else:
-                # Equip the accessory
-                self.cat_preview.accessories[self.current_category] = selected_item
+                self.cat_preview.data.accessories[self.current_category] = selected_item
 
     def _apply_current_accessories(self):
         """Apply all current accessories to the cat preview based on current indices."""
         if not self.cat_preview:
             return
         
-        # Clear all accessories first
-        self.cat_preview.accessories.clear()
+        # --- FIX: Access accessories through the 'data' component ---
+        self.cat_preview.data.accessories.clear()
         
-        # Apply accessories based on current selections
         for category in self.wardrobe_items.keys():
             current_items = self.category_options[category]
             if current_items:
@@ -284,7 +284,7 @@ class WardrobeScene(BaseScene):
                 selected_item = current_items[current_index]
                 
                 if selected_item != "None":
-                    self.cat_preview.accessories[category] = selected_item
+                    self.cat_preview.data.accessories[category] = selected_item
 
     def _try_on_current_item(self):
         """Apply the currently selected item to the cat preview."""
@@ -311,10 +311,10 @@ class WardrobeScene(BaseScene):
         if not self.cat_preview:
             return
         
-        if self.current_category in self.cat_preview.accessories:
-            del self.cat_preview.accessories[self.current_category]
+        # --- FIX: Access accessories through the 'data' component ---
+        if self.current_category in self.cat_preview.data.accessories:
+            del self.cat_preview.data.accessories[self.current_category]
         
-        # Set selection to "None"
         self.current_indices[self.current_category] = 0
         print(f"Removed accessory from category: {self.current_category}")
 
@@ -329,24 +329,21 @@ class WardrobeScene(BaseScene):
 
     def _cancel_changes(self):
         """Cancel changes and return to cat home without saving."""
-        # Restore original data to game
         if self.original_cat_data:
             self.game.cat_data = self.original_cat_data
             
-            # Also restore the visual preview to show original state
             if self.cat_preview:
-                # Reset accessories to original state
+                # --- FIX: Access accessories through the 'data' component ---
                 original_accessories = self.original_cat_data.get("accessories", {})
-                self.cat_preview.accessories.clear()
-                self.cat_preview.accessories.update(original_accessories)
+                self.cat_preview.data.accessories.clear()
+                self.cat_preview.data.accessories.update(original_accessories)
                 
-                # Reset selection indices to match original accessories
                 for category in self.wardrobe_items.keys():
                     current_item = original_accessories.get(category)
                     if current_item and current_item in self.category_options[category]:
                         self.current_indices[category] = self.category_options[category].index(current_item)
                     else:
-                        self.current_indices[category] = 0  # "None"
+                        self.current_indices[category] = 0
         
         print("Wardrobe changes cancelled.")
         self.scene_manager.pop()

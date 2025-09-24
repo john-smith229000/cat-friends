@@ -59,6 +59,7 @@ class MenuScene(BaseScene):
         screen.blit(self.title_surf, self.title_rect)
         for button in self.buttons:
             button.draw(screen)
+        return [screen.get_rect()]
 
     def _on_continue_clicked(self):
         # Load game data from save file and go to home scene

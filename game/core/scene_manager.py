@@ -34,8 +34,9 @@ class SceneManager:
 
     def draw(self):
         if self.get_active_scene():
-            self.get_active_scene().draw(self.screen)
-        pygame.display.flip()
+            # This now correctly returns the dirty rects to the main loop
+            return self.get_active_scene().draw(self.screen)
+        return []
 
     def push(self, scene_class, data=None):
         new_scene = scene_class(self, self.game)

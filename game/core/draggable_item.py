@@ -10,7 +10,6 @@ class DraggableItem:
         self.original_image = image
         self.image = image
         self.rect = self.image.get_rect(topleft=initial_pos)
-        self.last_rect = self.rect.copy() # For dirty rect tracking
         self.home_pos = initial_pos
         self.mask = pygame.mask.from_surface(self.image)
         
@@ -21,28 +20,29 @@ class DraggableItem:
         self.visible = True
     
     def update(self, dt):
-        """Saves the last position for dirty rect tracking."""
-        # Always save the position from the start of the frame
-        self.last_rect = self.rect.copy()
+        """Placeholder for future update logic if needed."""
+        pass
+
+    def start_drag(self, mouse_pos):
+        """Begins the dragging process."""
+        self.is_dragging = True
+        self.offset_x = mouse_pos[0] - self.rect.x
+        self.offset_y = mouse_pos[1] - self.rect.y
+
+    def stop_drag(self):
+        """Stops the dragging process."""
+        self.is_dragging = False
 
     def handle_drag_motion(self, mouse_pos):
-        """Call this from the scene when the item should move during dragging."""
+        """Updates the item's position while being dragged."""
         if self.is_dragging:
-            # Save the old position before moving
-            old_rect = self.rect.copy()
-            
-            # Update to new position
             self.rect.x = mouse_pos[0] - self.offset_x
             self.rect.y = mouse_pos[1] - self.offset_y
-            
-            # Update last_rect to the old position so the draw method can clean it up
-            self.last_rect = old_rect
 
     def draw(self, screen):
         """Draw the item to the screen only if it's visible."""
         if self.visible:
             screen.blit(self.image, self.rect)
-        return self.rect
 
     def reset_position(self):
         """Resets the item to its home position."""

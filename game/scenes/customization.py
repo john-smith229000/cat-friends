@@ -110,6 +110,7 @@ class CatCustomizationScene(BaseScene):
         self.cat_preview.draw(screen)
         for btn in self.category_buttons + self.color_buttons + [self.confirm_button]:
             btn.draw(screen)
+        return [screen.get_rect()]
 
     def _on_confirm(self):
         """Finalizes the cat and moves to the main game scene, passing data directly."""

@@ -40,7 +40,7 @@ def apply_shadow(base_image, shadow_image):
 class CatRenderer:
     """Handles all visual rendering and image composition for a cat."""
     
-    def __init__(self, customization_data, body_type="shorthair", scale=0.5):
+    def __init__(self, customization_data, body_type="shorthair", scale=0.5, sleep_scale=None):
         self.customization_data = customization_data
         self.body_type = body_type
         self.scale = scale
@@ -48,6 +48,8 @@ class CatRenderer:
         self.layers = self._load_layers()
         self.image = None
         self.scaled_image = None
+        self.sleep_image = None  # Store the sleep image
+        self.sleep_scale = sleep_scale if sleep_scale is not None else scale
     
     def _load_layers(self):
         """Loads all visual layers for the cat."""
@@ -65,6 +67,15 @@ class CatRenderer:
             raise FileNotFoundError(f"No base animation frames found for '{self.body_type}' at {frame_path}")
 
         layers = {"base": {"idle": base_frames}}
+        
+        # Load sleep image
+        sleep_path = f"{path_prefix}/base/sleep/001.png"
+        try:
+            layers["sleep"] = resources.load_image(sleep_path)
+        except (FileNotFoundError, pygame.error):
+            # If no sleep image, use first idle frame as fallback
+            layers["sleep"] = base_frames[0] if base_frames else None
+            print(f"Warning: Sleep image not found at {sleep_path}, using idle frame")
         
         # Load optional layers
         optional_layers = {
@@ -90,8 +101,45 @@ class CatRenderer:
         """Updates customization data and forces re-composition."""
         self.customization_data = new_data
     
-    def compose_image(self, base_frame, is_blinking=False, is_being_petted=False, is_hovered_by_food=False):
+    def compose_sleep_image(self):
+        """Creates the sleeping cat image."""
+        if not self.layers.get("sleep"):
+            return None
+        
+        base_frame = self.layers["sleep"]
+        final_image = pygame.Surface(base_frame.get_size(), pygame.SRCALPHA)
+        final_image.fill((0, 0, 0, 0))
+        
+        # Apply base color to sleep image
+        fill_color = self.customization_data.get("base_color", (200, 150, 100))
+        color_layer = pygame.Surface(base_frame.get_size(), pygame.SRCALPHA)
+        color_layer.fill((*fill_color, 255))
+        
+        colored_base = base_frame.copy()
+        colored_base.blit(color_layer, (0, 0), special_flags=pygame.BLEND_MULT)
+        final_image.blit(colored_base, (0, 0))
+        
+        # NOTE: Do not apply pattern or shadow, as those are designed for the idle pose
+        # and will not align with the sleeping pose. This ensures the correct sleep sprite is shown.
+        
+        # Scale the image
+        if self.sleep_scale != 1.0:
+            new_size = (int(final_image.get_width() * self.sleep_scale), 
+                       int(final_image.get_height() * self.sleep_scale))
+            return pygame.transform.smoothscale(final_image, new_size)
+        return final_image
+    
+    def compose_image(self, base_frame, is_blinking=False, is_being_petted=False, is_hovered_by_food=False, is_sleeping=False):
         """Creates the final cat image by layering and coloring components."""
+        # If sleeping, return the sleep image
+        if is_sleeping:
+            if not self.sleep_image:
+                self.sleep_image = self.compose_sleep_image()
+            self.scaled_image = self.sleep_image
+            self.image = self.sleep_image
+            return self.scaled_image
+        
+        # Otherwise, compose normal image
         if not base_frame:
             return None
 
