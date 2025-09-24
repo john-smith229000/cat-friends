@@ -28,7 +28,8 @@ class CatHomeScene(BaseScene):
         self.bed_world_y = 0
         self.bed_rect = None
         self.bed_image = None
-        
+
+        self.paused = False
         self._recalculate_layout()
 
         self.is_chatting = False
@@ -61,7 +62,7 @@ class CatHomeScene(BaseScene):
         try:
             self.bed_image = resources.load_image("images/items/furniture/bed.png", scale=0.25)
         except:
-            self.bed_image = pygame.Surface((200, 100), pygame.SRCALPHA); self.bed_image.fill((100, 50, 150, 100))
+            self.bed_image = pygame.Surface((200, 200), pygame.SRCALPHA); self.bed_image.fill((100, 50, 150, 100))
             print("Warning: Bed image not found, using placeholder")
 
         # Update bed rect position based on current pan.
@@ -117,6 +118,12 @@ class CatHomeScene(BaseScene):
         
         self.cat.bed_world_x = self.bed_rect.centerx
         self.cat.bed_world_y = self.bed_world_y
+
+        if initial_data.get("is_sleeping"):
+            self.cat.start_sleeping(self.bed_rect.centerx, self.bed_world_y)
+
+    def on_pause(self):
+        self.paused = True
     
     def on_resume(self):
         if self.game.cat_data and self.cat:
@@ -136,12 +143,19 @@ class CatHomeScene(BaseScene):
             
             if was_sleeping:
                 self.cat.start_sleeping(self.bed_rect.centerx, self.bed_world_y)
+    
+    def on_exit(self):
+        """Called when leaving the scene, ensures the game is saved."""
+        if self.cat:
+            self.game.cat_data = self.cat.to_dict()
+            save_manager.save_game(self.game.cat_data)
         
     def handle_event(self, event):
         # 1. Handle active states like chatting first.
         if self.is_chatting:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
+                    sounds.play_effect("effects/meow.wav")
                     self.chat_response_text = self.cat.get_chat_response(self.chat_input_text)
                     self.chat_response_timer = self.chat_response_duration
                     self.is_chatting = False
@@ -164,6 +178,7 @@ class CatHomeScene(BaseScene):
                     if self.cat.is_sleeping():
                         self.cat.handle_event(event) # It's a poke.
                     else:
+                        sounds.play_effect("effects/meow.wav")
                         self.is_chatting = True # It's a chat request.
                 else:
                     self.cat.handle_event(event) # It's a left-click for petting.
@@ -198,6 +213,8 @@ class CatHomeScene(BaseScene):
                 self.food_item.reset_position()
 
     def update(self, dt):
+        if self.paused:
+            return
         if self.chat_response_timer > 0: self.chat_response_timer -= dt
         keys = pygame.key.get_pressed(); panned = False
         if keys[pygame.K_LEFT]: self.background_x += self.pan_speed * dt; panned = True

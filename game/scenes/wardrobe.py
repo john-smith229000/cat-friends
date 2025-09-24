@@ -166,7 +166,7 @@ class WardrobeScene(BaseScene):
     def update(self, dt):
         """Update the cat preview."""
         if self.cat_preview:
-            self.cat_preview.update(dt)
+            self.cat_preview.update(dt, update_stats=False)
 
     def draw(self, screen):
         """Render the wardrobe scene."""

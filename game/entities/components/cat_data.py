@@ -13,7 +13,7 @@ class CatData:
         """Updates customization data."""
         self.customization_data = new_data
     
-    def to_dict(self, stats, accessories=None):
+    def to_dict(self, stats, accessories=None, is_sleeping=False):
         """Exports all cat data to a savable dictionary."""
         return {
             "cat_id": self.unique_id,
@@ -21,5 +21,6 @@ class CatData:
             "happiness": stats.happiness,
             "energy": stats.energy,
             "accessories": accessories or self.accessories,
-            "customization": self.customization_data
+            "customization": self.customization_data,
+            "is_sleeping": is_sleeping
         }

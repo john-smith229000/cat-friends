@@ -13,6 +13,8 @@ class BaseScene:
     def on_enter(self, data=None): pass
     def on_exit(self): pass
     def on_quit(self): pass
+    def on_pause(self): pass
+    def on_resume(self): pass
 
 class SceneManager:
     def __init__(self, game, initial_scene_class):
@@ -39,6 +41,8 @@ class SceneManager:
         return []
 
     def push(self, scene_class, data=None):
+        if self.get_active_scene() and hasattr(self.get_active_scene(), 'on_pause'):
+            self.get_active_scene().on_pause()
         new_scene = scene_class(self, self.game)
         new_scene.on_enter(data)
         self.scenes.append(new_scene)

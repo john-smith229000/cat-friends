@@ -39,18 +39,20 @@ class Cat:
             self.rect = composed_image.get_rect(center=self.behavior.position)
             self.mask = pygame.mask.from_surface(composed_image)
 
-    def update(self, dt):
+    def update(self, dt, update_stats=True):
         """Updates all cat systems."""
-        # Check for automatic state changes
-        if self.stats.is_exhausted() and not self.behavior.is_sleeping:
-            if hasattr(self, 'bed_world_x') and hasattr(self, 'bed_world_y'):
-                self.start_sleeping(self.bed_world_x, self.bed_world_y)
+        if update_stats:
+            # Check for automatic state changes
+            if self.stats.is_exhausted() and not self.behavior.is_sleeping:
+                if hasattr(self, 'bed_world_x') and hasattr(self, 'bed_world_y'):
+                    self.start_sleeping(self.bed_world_x, self.bed_world_y)
+            
+            if self.behavior.is_sleeping and self.stats.is_fully_rested():
+                self.wake_up()
+            
+            # Update all components
+            self.stats.update(dt, self.interactions.is_being_petted, self.behavior.is_sleeping)
         
-        if self.behavior.is_sleeping and self.stats.is_fully_rested():
-            self.wake_up()
-        
-        # Update all components
-        self.stats.update(dt, self.interactions.is_being_petted, self.behavior.is_sleeping)
         self.behavior.update(dt) # This updates the logical position
         
         # Determine current state for interactions
@@ -63,9 +65,6 @@ class Cat:
         # Sync visuals at the end of the update cycle.
         # Note we no longer manually set self.rect.center here.
         self._update_visuals()
-
-        # The return value is no longer needed with the new drawing method.
-        # return redraw_needed 
 
 
     def draw(self, screen):
@@ -105,7 +104,7 @@ class Cat:
         if not self.is_sleeping(): self.stats.feed()
     def set_food_hover(self, is_hovering):
         if not self.is_sleeping(): self.interactions.set_food_hover(is_hovering)
-    def to_dict(self): return self.data.to_dict(self.stats, self.data.accessories)
+    def to_dict(self): return self.data.to_dict(self.stats, self.data.accessories, self.behavior.is_sleeping)
     def update_customization(self, new_data):
         self.data.update_customization(new_data); self.renderer.update_customization(new_data); self._update_visuals()
 

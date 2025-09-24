@@ -39,6 +39,9 @@ class Game:
         # Fullscreen tracking
         self.fullscreen = False
         self.windowed_size = (SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        # Create a font for the FPS counter
+        self.font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24)
         
         self.scene_manager = SceneManager(self, MenuScene)
 
@@ -64,6 +67,16 @@ class Game:
             
             # This is now the single source of truth for drawing
             dirty_rects = self.scene_manager.draw()
+
+
+            # Code to display FPS ---
+            fps_value = self.clock.get_fps()
+            fps_text = f"FPS: {fps_value:.1f}"
+            # Use red text if the FPS drops below 50
+            color = pygame.Color("white") if fps_value >= 50 else pygame.Color("red")
+            fps_surface = self.font.render(fps_text, True, color)
+            self.screen.blit(fps_surface, (10, 10))
+
             pygame.display.update(dirty_rects) 
             
             self.clock.tick(FPS)
