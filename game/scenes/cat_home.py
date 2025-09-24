@@ -126,23 +126,8 @@ class CatHomeScene(BaseScene):
         self.paused = True
     
     def on_resume(self):
-        if self.game.cat_data and self.cat:
-            was_sleeping = self.cat.is_sleeping()
-            current_height = self.game.screen.get_size()[1]
-            cat_y_pos = current_height * 0.63
-            
-            if was_sleeping:
-                position = (self.bed_rect.centerx, self.bed_world_y)
-            else:
-                position = (self.cat_world_x + self.background_x, cat_y_pos)
-            
-            self.cat = Cat(position=position, initial_stats=self.game.cat_data, sleep_scale=0.2)
-            
-            self.cat.bed_world_x = self.bed_rect.centerx
-            self.cat.bed_world_y = self.bed_world_y
-            
-            if was_sleeping:
-                self.cat.start_sleeping(self.bed_rect.centerx, self.bed_world_y)
+        """Called when this scene becomes active again."""
+        self.paused = False
     
     def on_exit(self):
         """Called when leaving the scene, ensures the game is saved."""
@@ -176,13 +161,20 @@ class CatHomeScene(BaseScene):
                 # If it's a right-click, check the cat's state BEFORE handling the event.
                 if event.button == 3:
                     if self.cat.is_sleeping():
-                        self.cat.handle_event(event) # It's a poke.
+                        # self.cat.handle_event will return True if the poke wakes the cat up.
+                        if self.cat.handle_event(event):
+                            # If the cat woke up, move it to its correct idle position.
+                            idle_x = self.cat_world_x + self.background_x
+                            idle_y = self.game.screen.get_height() * 0.63
+                            self.cat.set_position(idle_x, idle_y)
                     else:
+                        # If the cat is awake, the right-click is for chatting.
                         sounds.play_effect("effects/meow.wav")
                         self.is_chatting = True # It's a chat request.
                 else:
-                    self.cat.handle_event(event) # It's a left-click for petting.
-            
+                    # Any other mouse button (like a left-click) is for petting.
+                    self.cat.handle_event(event)
+
             # If the click was NOT on the cat, check other game objects.
             elif self.bed_rect.collidepoint(event.pos) and self.cat.can_sleep():
                 self.cat.start_sleeping(self.bed_rect.centerx, self.bed_world_y)

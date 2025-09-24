@@ -75,11 +75,17 @@ class Cat:
 
     def handle_event(self, event):
         if self.behavior.is_sleeping and event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-            if self.rect and self.rect.collidepoint(event.pos): self.poke()
+            if self.rect and self.rect.collidepoint(event.pos):
+                # Return True if the poke woke the cat up
+                return self.poke()
         self.interactions.handle_event(event, self.rect, self.mask, self.behavior.state)
+        return False
 
     def poke(self):
-        if self.behavior.is_sleeping and self.interactions.poke(): self.wake_up(force=True)
+        if self.behavior.is_sleeping and self.interactions.poke():
+            self.wake_up(force=True)
+            return True # Return True because the cat woke up
+        return False
 
     def start_sleeping(self, bed_x, bed_y):
         if not self.behavior.is_sleeping:

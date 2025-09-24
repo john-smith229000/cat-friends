@@ -52,15 +52,15 @@ class SceneManager:
         pass
 
     def pop(self):
-        if self.get_active_scene():
-            self.get_active_scene().on_exit()
-            popped_scene = self.scenes.pop()
+        if self.scenes:
+            # First, get the scene we are about to remove
+            popped_scene = self.get_active_scene()
+            popped_scene.on_exit()
+            self.scenes.pop()
             
-            # Call on_resume on the scene that's now active
-            if self.get_active_scene() and hasattr(self.get_active_scene(), 'on_resume'):
+            # NOW, after the scene has been removed, get the NEW active scene and tell it to resume.
+            if self.get_active_scene():
                 self.get_active_scene().on_resume()
-                
-            return popped_scene
 
     def set_scene(self, scene_class, data=None):
         while self.scenes:

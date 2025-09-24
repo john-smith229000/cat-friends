@@ -1,8 +1,8 @@
 {
     "cat_id": "custom_cat",
-    "hunger": 95.84268653392766,
-    "happiness": 89.60339462757106,
-    "energy": 14.10423755645752,
+    "hunger": 83.12927924394603,
+    "happiness": 88.7048152923584,
+    "energy": 52.0157527923584,
     "accessories": {},
     "customization": {
         "body_type": "shorthair",
@@ -30,5 +30,5 @@
         "happiness": 70.0,
         "energy": 100.0
     },
-    "is_sleeping": true
+    "is_sleeping": false
 }
