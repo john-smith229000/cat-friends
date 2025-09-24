@@ -1,25 +1,23 @@
 {
     "cat_id": "custom_cat",
-    "hunger": 83.12927924394603,
-    "happiness": 88.7048152923584,
-    "energy": 52.0157527923584,
-    "accessories": {},
+    "hunger": 89.7283868789674,
+    "happiness": 89.20770623683936,
+    "energy": 64.81255769729614,
+    "accessories": {
+        "head": "hat2"
+    },
     "customization": {
         "body_type": "shorthair",
         "base_color": [
-            240,
-            180,
-            100
-        ],
-        "pattern_color": [
-            200,
-            100,
-            50
-        ],
-        "eye_color": [
-            87,
             255,
-            250
+            255,
+            255
+        ],
+        "pattern_color": null,
+        "eye_color": [
+            150,
+            100,
+            230
         ],
         "nose_color": [
             255,
@@ -30,5 +28,5 @@
         "happiness": 70.0,
         "energy": 100.0
     },
-    "is_sleeping": false
+    "is_sleeping": true
 }

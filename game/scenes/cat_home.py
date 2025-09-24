@@ -56,13 +56,13 @@ class CatHomeScene(BaseScene):
         self.cat_world_x = self.background_image.get_width() / 2
         
         # CRITICAL FIX: Set bed position using midbottom anchor for consistency.
-        self.bed_world_x = self.background_image.get_width() / 2 + 400
-        self.bed_world_y = current_height * 0.57
+        self.bed_world_x = self.background_image.get_width() / 2 + 450
+        self.bed_world_y = current_height * 0.60
         
         try:
             self.bed_image = resources.load_image("images/items/furniture/bed.png", scale=0.25)
         except:
-            self.bed_image = pygame.Surface((200, 200), pygame.SRCALPHA); self.bed_image.fill((100, 50, 150, 100))
+            self.bed_image = pygame.Surface((400, 200), pygame.SRCALPHA); self.bed_image.fill((100, 50, 150, 0))
             print("Warning: Bed image not found, using placeholder")
 
         # Update bed rect position based on current pan.
@@ -216,6 +216,12 @@ class CatHomeScene(BaseScene):
         was_sleeping = self.cat.is_sleeping()
         self.cat.update(dt)
         just_woke_up = was_sleeping and not self.cat.is_sleeping()
+        just_went_to_sleep = not was_sleeping and self.cat.is_sleeping()
+
+        # If the cat just fell asleep, close the chat box.
+        if just_went_to_sleep and self.is_chatting:
+            self.is_chatting = False
+            self.chat_input_text = ""
 
         if panned or just_woke_up:
             self.bed_rect.center = (self.bed_world_x + self.background_x, self.bed_world_y)

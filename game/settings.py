@@ -28,7 +28,7 @@ MAX_STAT_VALUE = 100.0
 HUNGER_DECAY_RATE = 0.05
 HAPPINESS_DECAY_RATE = 0.05
 HAPPINESS_INCREASE_RATE = 15.0 # While being petted
-ENERGY_DECAY_RATE = 15 # How fast energy depletes while awake
+ENERGY_DECAY_RATE = 10 # How fast energy depletes while awake
 ENERGY_REPLENISH_RATE = 10.0 # How fast energy recovers while sleeping
 
 # Values are in points-per-action
