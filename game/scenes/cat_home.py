@@ -1,6 +1,7 @@
 # game/scenes/cat_home.py
 
 import pygame
+from datetime import datetime
 
 from settings import *
 from core.sound_manager import sounds
@@ -22,6 +23,18 @@ class CatHomeScene(BaseScene):
         self.background_y_offset = 600
         self.pan_speed = 200
         self.zoom_factor = 2.5
+
+        self.time_of_day = "day"  # Default to day
+        self.day_bg_original = resources.load_image("images/backgrounds/main.png")
+        try:
+            # Assumes you have 'main_night.jpg' in the same folder
+            self.night_bg_original = resources.load_image("images/backgrounds/main_night.png")
+        except FileNotFoundError:
+            print("Warning: 'main_night.jpg' not found. Using day background as fallback.")
+            self.night_bg_original = self.day_bg_original # Fallback to day image
+        self.background_image = None # This will be set in _recalculate_layout
+        self.time_update_interval = 60  # Check the clock every 60 seconds
+        self.time_update_timer = self.time_update_interval
         
         self.cat_world_x = 0
         self.bed_world_x = 0
@@ -41,12 +54,12 @@ class CatHomeScene(BaseScene):
     def _recalculate_layout(self):
         current_width, current_height = self.game.screen.get_size()
         
-        original_bg = resources.load_image("images/backgrounds/main.png")
-        aspect_ratio = original_bg.get_width() / original_bg.get_height()
+        active_original_bg = self.day_bg_original if self.time_of_day == "day" else self.night_bg_original
+        aspect_ratio = active_original_bg.get_width() / active_original_bg.get_height()
         scaled_height = int(current_height * self.zoom_factor)
         scaled_width = int(scaled_height * aspect_ratio)
 
-        self.background_image = pygame.transform.smoothscale(original_bg, (scaled_width, scaled_height))
+        self.background_image = pygame.transform.smoothscale(active_original_bg, (scaled_width, scaled_height))
         self.max_pan_x = max(0, self.background_image.get_width() - current_width)
         max_pan_y = max(0, self.background_image.get_height() - current_height)
 
@@ -75,11 +88,19 @@ class CatHomeScene(BaseScene):
         self.hud_font = pygame.font.SysFont(DEFAULT_FONT_NAME, 24)
         self.mirror_image = resources.load_image("images/ui_elements/mirror.png", scale=0.3)
         self.mirror_rect = self.mirror_image.get_rect(topleft=(20, 250))
-
+        
+        # Create the mute button and assign it to an instance variable
         button_y = current_height - 60
+        self.mute_button = Button(
+            rect=(current_width - 180, button_y, 80, 50), 
+            text="Mute", 
+            callback=self.toggle_mute_text
+        )
+        
+        # Store all buttons in a list for easy drawing and event handling
         self.volume_buttons = [
             Button(rect=(current_width - 240, button_y, 50, 50), text="-", callback=sounds.decrease_volume),
-            Button(rect=(current_width - 180, button_y, 80, 50), text="Mute", callback=self.toggle_mute_text),
+            self.mute_button,
             Button(rect=(current_width - 90, button_y, 50, 50), text="+", callback=sounds.increase_volume)
         ]
         
@@ -100,6 +121,16 @@ class CatHomeScene(BaseScene):
                 self.cat.set_position(new_cat_screen_x, cat_y_pos)
             else:
                 self.cat.set_position(self.bed_rect.centerx, self.bed_world_y)
+    
+    def _update_time_of_day(self):
+        """Checks the system clock and updates the background if the time of day has changed."""
+        current_hour = datetime.now().hour
+        new_time_of_day = "day" if 6 <= current_hour < 20 else "night" # 6 AM to 8 PM is day
+
+        if new_time_of_day != self.time_of_day:
+            self.time_of_day = new_time_of_day
+            print(f"Time of day changed to: {self.time_of_day}")
+            self._recalculate_layout() # Crucial: Reload and rescale the background
 
     def on_enter(self, data=None):
         if not pygame.mixer.music.get_busy():
@@ -119,8 +150,11 @@ class CatHomeScene(BaseScene):
         self.cat.bed_world_x = self.bed_rect.centerx
         self.cat.bed_world_y = self.bed_world_y
 
+        self._update_time_of_day()
+
         if initial_data.get("is_sleeping"):
             self.cat.start_sleeping(self.bed_rect.centerx, self.bed_world_y)
+
 
     def on_pause(self):
         self.paused = True
@@ -217,6 +251,10 @@ class CatHomeScene(BaseScene):
         self.cat.update(dt)
         just_woke_up = was_sleeping and not self.cat.is_sleeping()
         just_went_to_sleep = not was_sleeping and self.cat.is_sleeping()
+
+        if self.time_update_timer >= self.time_update_interval:
+            self.time_update_timer = 0
+            self._update_time_of_day()
 
         # If the cat just fell asleep, close the chat box.
         if just_went_to_sleep and self.is_chatting:

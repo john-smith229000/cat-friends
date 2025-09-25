@@ -1,8 +1,8 @@
 {
     "cat_id": "custom_cat",
-    "hunger": 89.7283868789674,
-    "happiness": 89.20770623683936,
-    "energy": 64.81255769729614,
+    "hunger": 87.25788366794619,
+    "happiness": 93.31685940027258,
+    "energy": 70.56880636215239,
     "accessories": {
         "head": "hat2"
     },
@@ -28,5 +28,5 @@
         "happiness": 70.0,
         "energy": 100.0
     },
-    "is_sleeping": true
+    "is_sleeping": false
 }
